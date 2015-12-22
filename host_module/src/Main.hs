@@ -8,47 +8,28 @@ import System.MIDI.Utility
 import System.Timer.Updatable
 
 import qualified Data.ByteString.Char8 as B
-import System.Hardware.Serialport as S
+import qualified System.Hardware.Serialport as S
 
+import Protocol.Message
+import Protocol.Packet
+import Control.Monad.Trans.State
+import Pipes
 
 output_channel = 1
 
-getInSync :: SerialPort -> IO ()
-getInSync s = do
-  S.recv s 1 >>= \v -> if v == (B.pack "A")
-                       then do putStrLn "got an A"
-                               S.send s $ B.pack "B"
-                               S.flush s
-                               return ()
-                       else getInSync s
+handle :: Producer B.ByteString SerialPort ()
+handle = do
+  let port = "/dev/ttys003"
+  s <- lift $ connectController port S.CS57600
+  (message >> lift disconnectController)
 
-                            
-readPacket :: SerialPort -> IO String
-readPacket s = fooAux "" >>= return . reverse
-  where fooAux str = do
-               v <- S.recv s 1
-               if (B.length v == 0)
-               then   fooAux str
-               else if (B.head v) == '\n'
-                    then return str
-                    else fooAux ((B.head v) : str)
-
-
-readPackets :: SerialPort -> IO ()
-readPackets s = do
-  str <- readPacket s
-  putStrLn str
-  readPackets s
+--loop :: Producer B.ByteString SerialPort ()
+loop :: Effect SerialPort ()
+loop = for handle (packet ~> lift . liftIO . print)
 
 main :: IO ()
 main = do
-  let port = "/dev/tty.usbmodem1411"  
-  s <- S.openSerial port S.defaultSerialSettings { commSpeed = CS57600 }
-  getInSync s
---  str <- readPacket s
---  putStrLn str
-  readPackets s
-  S.closeSerial s
+  evalStateT (runEffect loop) undefined
 
 {-
 main2 :: IO ()
