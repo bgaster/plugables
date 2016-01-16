@@ -34,7 +34,7 @@ import Pipes
 type MessageState = S.SerialPort
 
 -- | The 'SerialPort' type is a state monad (with IO support) used to control 
---   access/communication to the Arduino haardware
+--   access/communication to the Arduino hardware
 type SerialPort = StateT MessageState IO
 
 --------------------------------------------------------------------------------
