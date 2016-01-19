@@ -51,36 +51,47 @@ enum PIN {
 
 //------------------------------------------------------------------------------
 
+namespace blocks {
+
 template<pin_id Id>
-struct modify_policy_digital_read {
-    void setup() {
+struct modify_policy_digital_read
+{
+    void setup() const
+    {
 	// add pin setup code here
     }
     
-    uint8_t read(void) {
+    uint8_t read(void)
+    {
 	// return digital_read()
 	return 0;
     }    
 };
 
 template<pin_id Id>
-struct modify_policy_digital_write {
-    void setup() {
+struct modify_policy_digital_write
+{
+    void setup() const
+    {
 	// add pin setup code here	
     }
     
-    void write(uint8_t value) {
+    void write(uint8_t value)
+    {
 	// digital_write()
     }    
 };
 
 template<pin_id Id>
-struct modify_policy_analog_read {
-    void setup() {
+struct modify_policy_analog_read
+{
+    void setup() const
+    {
 	// add pin setup code here
     }
     
-    uint8_t read(void) {
+    uint8_t read(void)
+    {
 	// return analog_read()
 	return 0;
     }    
@@ -89,13 +100,17 @@ struct modify_policy_analog_read {
 template<pin_id Id>
 struct modify_policy_undefined {
     // used as default for invalid, i.e. type error, cases
-};
-    
+};    
 
 //------------------------------------------------------------------------------
 
 template <pin_id Id, template<pin_id Id_> typename pin_policy>
-struct pin : public pin_policy<Id> {
+struct pin : public pin_policy<Id>
+{
+    constexpr pin() 
+    {
+    }
+    
     //typedef pin_policy pin_policy_;
 };
 
@@ -138,6 +153,8 @@ typedef digital_pin_wo<D4> d4_wo;
 typedef digital_pin_wo<D5> d5_wo;
 typedef digital_pin_wo<D6> d6_wo;
 typedef digital_pin_wo<D7> d7_w0;
+
+}; // namespace blocks
 
 
     

@@ -1,7 +1,7 @@
 /*
- * Name: controller.hh
- * Author: Benedict R. Gaster
- * Desc:
+ * @name controller.hh
+ * @author Benedict R. Gaster
+ * @description
  *
  * The code is designed to be used with statically known controllers,
  * in particular, most (if not all) parameters are set via template
@@ -24,6 +24,7 @@
 #include <pin.hh>
 
 #if defined(__DEBUG__)
+#include <stdio.h>
 #define __assert__(msg) printf("%s", (msg))
 #else
 #define __assert__(msg)
@@ -39,12 +40,12 @@ typedef uint8_t controller_id;
  * @enum class controller_type
  * @description
  */
-enum class controller_type {
+enum class controller_type
+{
     LINEAR_POT,
     LINEAR_SLIDER,
     TOGGLE_PAIR,
     SWITCH_TRIPPLE,
-    LED_SWITCH,
     UNDEFINED	
 };
 
@@ -68,36 +69,49 @@ private:
     // module! if, not the compiler will catch it and produce a static error
     static constexpr controller_id id_ = Id;
     static constexpr controller_type type_ = T;
-    static constexpr Pin pin_ = Pin();
-    
-    static constexpr control_command ctl_cmd_ = Cmd;
+    static constexpr Pin pin_ {};
+    static constexpr control_command ctl_cmd_ {Cmd};
 public:
     // only default constructor exposed to application
-    controller_policy()
+    constexpr controller_policy()
     { }
 
     // as this intended to be allocated only once, at compile time,
     // then delete copy/assignment constructors
     controller_policy(controller_policy const&) = delete; 
     controller_policy& operator=(controller_policy const&) = delete; 
-    
+
+    /**
+     * @method get_type
+     * @description getter for controller type
+     */
     auto get_type() const 
     {
 	return type_;
     }
 
+    /**
+     * @method get_type
+     * @description getter for controller ID
+     */
     auto get_controller_id() const
     {
 	return id_;
     }
 
-    
+    /**
+     * @method get_type
+     * @description getter for controller pin 1
+     */    
     auto get_pin() const
     {
 	return pin_;
     }
     
-
+    /**
+     * @method get_type
+     * @description getter for control command value
+     */
     auto get_command() const
     {
 	return ctl_cmd_;
@@ -106,6 +120,14 @@ public:
 
 } // namespace detail
 
+//------------------------------------------------------------------------------
+
+/**
+ * @template class controller
+ *
+ * @description this is the base template class and should never be
+ * instantiate! If it is, then a compile time error will be raised 
+ */
 template<
     controller_id Id,
     controller_type Type,
@@ -124,6 +146,13 @@ class controller {
 	"Unsupported controller");
 };    
 
+// now we define the valid specializations for each controller type
+
+/**
+ * @template class specialization for controller
+ *
+ * @description linearPot controller
+ */
 template <
     controller_id Id,
     typename Pin,
@@ -136,11 +165,83 @@ class controller <
                          Id,
                          controller_type::LINEAR_POT,
                          Pin,
-                         Cmd> {
-    // note: as we are 100% static should not be need to initialize
-    // anything here!
+                         Cmd>
+{
+private:
+public:
+    typedef detail::controller_policy<
+                         Id,
+                         controller_type::LINEAR_POT,
+                         Pin,
+                         Cmd> controller_policy_;
+    
+    constexpr controller() 
+    {
+    }
+
+    /*
+     * @method setup
+     *
+     * @description
+     */
+    constexpr void setup() const {
+	controller_policy_::get_pin().setup();
+    }
 };
 
+/**
+ * @template class specialization for controller
+ *
+ * @description linearSlider controller
+ */
+template <
+    controller_id Id,
+    typename Pin,
+    control_command Cmd>
+class controller <
+    Id,
+    controller_type::LINEAR_SLIDER,
+    Pin,
+    Cmd> : public  detail::controller_policy<
+                         Id,
+                         controller_type::LINEAR_SLIDER,
+                         Pin,
+                         Cmd>
+{
+private:
+public:
+    typedef detail::controller_policy<
+                         Id,
+                         controller_type::LINEAR_SLIDER,
+                         Pin,
+                         Cmd> controller_policy_;
+
+    /*
+     * @constructor controller
+     *
+     * @description default constructor for linearSlider controller
+     * 
+     */    
+    constexpr controller() 
+    {
+    }
+
+    /*
+     * @method setup
+     *
+     * @description
+     */
+    constexpr void setup() const {
+	controller_policy_::get_pin().setup();
+    }
+};
+
+
+/**
+ * @template class specialization for controller
+ *
+ * @description switchTripple controller
+ */
 template <
     controller_id Id,
     typename Pin1,
@@ -155,14 +256,44 @@ class controller <
                          Id,
                          controller_type::SWITCH_TRIPPLE,
                          Pin1,
-                         Cmd1> {
+                         Cmd1>
+{
+private:
     // note: as we are 100% static should not be need to initialize
     // anything here!
 
-    static constexpr Pin2 pin2_ = Pin2();
+    static constexpr Pin2 pin2_ { };
     static constexpr control_command ctl_cmd2_ = Cmd2;
+
+public:
+    typedef detail::controller_policy<
+                         Id,
+                         controller_type::SWITCH_TRIPPLE,
+                         Pin1,
+                         Cmd1> controller_policy_;
+
+    constexpr controller() 
+    {
+    }
+
+    /*
+     * @method setup
+     *
+     * @description
+     */
+    constexpr void setup() const
+    {
+	controller_policy_::get_pin().setup();
+	pin2_.setup();
+    }
+
 };
 
+/**
+ * @template class specialization for controller
+ *
+ * @description togglePair controller
+ */
 template <
     controller_id Id,
     typename Pin1,
@@ -180,8 +311,9 @@ class controller <
                          Id,
                          controller_type::TOGGLE_PAIR,
                          Pin1,
-                         Cmd1> {
-public:
+                         Cmd1>
+{
+private:	    
     typedef detail::controller_policy<
                          Id,
                          controller_type::TOGGLE_PAIR,
@@ -189,20 +321,77 @@ public:
                          Cmd1> controller_policy_;
     
     
-    // note: as we are 100% static should not be need to initialize
-    // anything here!
-
-    static constexpr Pin2 pin2_ = Pin2();
+    // note the following only works by the fact that controllers
+    // have unique IDs, which are passed as template parameter
+    static constexpr Pin2 pin2_ {};
     static constexpr control_command ctl_cmd2_ = Cmd2;
-    static constexpr Pin2 pin3_ = Pin3();
-
-public:
+    static constexpr Pin3 pin3_ {};
     
-    void setup() const {
+public:
+    constexpr controller() 
+    {
+    }    
+    
+    /*
+     * @method setup
+     *
+     * @description
+     */
+    constexpr void setup() const
+    {
 	controller_policy_::get_pin().setup();
+	pin2_.setup();
+	pin3_.setup();
     }
     
 };
+
+//------------------------------------------------------------------------------
+// allocate any static constexprs
+
+// SWITCH_TRIPPLE
+template <
+    controller_id Id,
+    typename Pin1,
+    control_command Cmd1,
+    typename Pin2,
+    control_command Cmd2>
+constexpr Pin2 controller <
+    Id,
+    controller_type::SWITCH_TRIPPLE,
+    Pin1, Cmd1,
+    Pin2, Cmd2>::pin2_;
+
+// TOGGLE_PAIR
+template <
+    controller_id Id,
+    typename Pin1,
+    control_command Cmd1,
+    typename Pin2,
+    control_command Cmd2,
+    typename Pin3>
+constexpr Pin2 controller <
+    Id,
+    controller_type::TOGGLE_PAIR,
+    Pin1, Cmd1,
+    Pin2, Cmd2,
+    Pin3,
+    CONTROL_COMMAND_UNDEFINED>::pin2_;
+
+template <
+    controller_id Id,
+    typename Pin1,
+    control_command Cmd1,
+    typename Pin2,
+    control_command Cmd2,
+    typename Pin3>
+constexpr Pin3 controller <
+    Id,
+    controller_type::TOGGLE_PAIR,
+    Pin1, Cmd1,
+    Pin2, Cmd2,
+    Pin3,
+    CONTROL_COMMAND_UNDEFINED>::pin3_;
 
 
 } // namespace blocks
