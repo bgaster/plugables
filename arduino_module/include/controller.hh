@@ -58,8 +58,7 @@ namespace detail {
 template<
     controller_id Id,
     controller_type T,
-    typename Pin,
-    control_command Cmd>
+    typename Pin>
 class controller_policy {
 	
 private:
@@ -70,7 +69,7 @@ private:
     static constexpr controller_id id_ = Id;
     static constexpr controller_type type_ = T;
     static constexpr Pin pin_ {};
-    static constexpr control_command ctl_cmd_ {Cmd};
+
 public:
     // only default constructor exposed to application
     constexpr controller_policy()
@@ -107,15 +106,6 @@ public:
     {
 	return pin_;
     }
-    
-    /**
-     * @method get_type
-     * @description getter for control command value
-     */
-    auto get_command() const
-    {
-	return ctl_cmd_;
-    }    
 };
 
 } // namespace detail
@@ -132,11 +122,8 @@ template<
     controller_id Id,
     controller_type Type,
     typename Pin1,
-    control_command Cmd,
     typename Pin2 = pin<PIN_UNDEFINED, modify_policy_undefined>(),
-    control_command Cmd2 = CONTROL_COMMAND_UNDEFINED,
     typename Pin3 = pin<PIN_UNDEFINED, modify_policy_undefined>(),
-    control_command Cmd3 = CONTROL_COMMAND_UNDEFINED,
     // some "fake" arguments to make sure this
     // only fires when there is no valid instance
     int X = 0, size_t T = sizeof(char)> 
@@ -155,25 +142,21 @@ class controller {
  */
 template <
     controller_id Id,
-    typename Pin,
-    control_command Cmd>
+    typename Pin>
 class controller <
     Id,
     controller_type::LINEAR_POT,
-    Pin,
-    Cmd> : public  detail::controller_policy<
+    Pin> : public  detail::controller_policy<
                          Id,
                          controller_type::LINEAR_POT,
-                         Pin,
-                         Cmd>
+                         Pin>
 {
 private:
 public:
     typedef detail::controller_policy<
                          Id,
                          controller_type::LINEAR_POT,
-                         Pin,
-                         Cmd> controller_policy_;
+                         Pin> controller_policy_;
     
     constexpr controller() 
     {
@@ -196,25 +179,21 @@ public:
  */
 template <
     controller_id Id,
-    typename Pin,
-    control_command Cmd>
+    typename Pin>
 class controller <
     Id,
     controller_type::LINEAR_SLIDER,
-    Pin,
-    Cmd> : public  detail::controller_policy<
+    Pin> : public  detail::controller_policy<
                          Id,
                          controller_type::LINEAR_SLIDER,
-                         Pin,
-                         Cmd>
+                         Pin>
 {
 private:
 public:
     typedef detail::controller_policy<
                          Id,
                          controller_type::LINEAR_SLIDER,
-                         Pin,
-                         Cmd> controller_policy_;
+                         Pin> controller_policy_;
 
     /*
      * @constructor controller
@@ -245,32 +224,27 @@ public:
 template <
     controller_id Id,
     typename Pin1,
-    control_command Cmd1,
-    typename Pin2,
-    control_command Cmd2>
+    typename Pin2>
 class controller <
     Id,
     controller_type::SWITCH_TRIPPLE,
-    Pin1, Cmd1,
-    Pin2, Cmd2> : public  detail::controller_policy<
+    Pin1,
+    Pin2> : public  detail::controller_policy<
                          Id,
                          controller_type::SWITCH_TRIPPLE,
-                         Pin1,
-                         Cmd1>
+                         Pin1>
 {
 private:
     // note: as we are 100% static should not be need to initialize
     // anything here!
 
     static constexpr Pin2 pin2_ { };
-    static constexpr control_command ctl_cmd2_ = Cmd2;
 
 public:
     typedef detail::controller_policy<
                          Id,
                          controller_type::SWITCH_TRIPPLE,
-                         Pin1,
-                         Cmd1> controller_policy_;
+                         Pin1> controller_policy_;
 
     constexpr controller() 
     {
@@ -297,34 +271,28 @@ public:
 template <
     controller_id Id,
     typename Pin1,
-    control_command Cmd1,
     typename Pin2,
-    control_command Cmd2,
     typename Pin3>
 class controller <
     Id,
     controller_type::TOGGLE_PAIR,
-    Pin1, Cmd1,
-    Pin2, Cmd2,
-    Pin3,
-    CONTROL_COMMAND_UNDEFINED> : public  detail::controller_policy<
+    Pin1,
+    Pin2,
+    Pin3> : public  detail::controller_policy<
                          Id,
                          controller_type::TOGGLE_PAIR,
-                         Pin1,
-                         Cmd1>
+                         Pin1>
 {
 private:	    
     typedef detail::controller_policy<
                          Id,
                          controller_type::TOGGLE_PAIR,
-                         Pin1,
-                         Cmd1> controller_policy_;
+                         Pin1> controller_policy_;
     
     
     // note the following only works by the fact that controllers
     // have unique IDs, which are passed as template parameter
     static constexpr Pin2 pin2_ {};
-    static constexpr control_command ctl_cmd2_ = Cmd2;
     static constexpr Pin3 pin3_ {};
     
 public:
@@ -353,45 +321,37 @@ public:
 template <
     controller_id Id,
     typename Pin1,
-    control_command Cmd1,
-    typename Pin2,
-    control_command Cmd2>
+    typename Pin2>
 constexpr Pin2 controller <
     Id,
     controller_type::SWITCH_TRIPPLE,
-    Pin1, Cmd1,
-    Pin2, Cmd2>::pin2_;
+    Pin1,
+    Pin2>::pin2_;
 
 // TOGGLE_PAIR
 template <
     controller_id Id,
     typename Pin1,
-    control_command Cmd1,
     typename Pin2,
-    control_command Cmd2,
     typename Pin3>
 constexpr Pin2 controller <
     Id,
     controller_type::TOGGLE_PAIR,
-    Pin1, Cmd1,
-    Pin2, Cmd2,
-    Pin3,
-    CONTROL_COMMAND_UNDEFINED>::pin2_;
+    Pin1,
+    Pin2,
+    Pin3>::pin2_;
 
 template <
     controller_id Id,
     typename Pin1,
-    control_command Cmd1,
     typename Pin2,
-    control_command Cmd2,
     typename Pin3>
 constexpr Pin3 controller <
     Id,
     controller_type::TOGGLE_PAIR,
-    Pin1, Cmd1,
-    Pin2, Cmd2,
-    Pin3,
-    CONTROL_COMMAND_UNDEFINED>::pin3_;
+    Pin1,
+    Pin2,
+    Pin3>::pin3_;
 
 
 } // namespace blocks
