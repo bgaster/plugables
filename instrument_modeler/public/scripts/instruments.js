@@ -178,6 +178,57 @@ function ListInstrumentsCtrl($scope, ModuleService, $location, Restangular) {
 	    $location.path('/list');
 	});
     }
+
+    /**
+     * @function $scope.createArduinoModuleCode
+     * @description 
+     */
+    $scope.createArduinoModuleCode = function(moduleId) {
+	Restangular.one("modules", moduleId).get().then(function(mod) {
+	    
+	    Restangular.all("moduleControllers").getList().then(function(cons) {
+		var code = filePrefix;
+
+		code += fileStartModule(moduleId);
+		
+		var controllers = cons.plain().filter(function(control) {
+		    return control.moduleId == moduleId;
+		});
+
+		var left = controllers.length;
+
+		controllers.forEach(function(control) {
+
+		    code += fileController(
+			control.id,
+			control.type,
+			control.pin1,
+			control.pin2,
+			control.pin3);
+		    
+		    if (left > 1) {
+			code += ",\n";
+			left--;
+		    }
+		});
+
+		code += fileEndModule(mod.name) + "\n\n";
+		
+		code += filePostfix(mod.name);
+		
+		
+		var blob =
+		    new Blob(
+			[code],
+			{type: "text/plain;charset=utf-8"});
+		
+		saveAs(blob, createFileName(mod.name, moduleId));
+		
+	    });
+
+	    $location.path('/');
+	});
+    }
 }
 
 /**

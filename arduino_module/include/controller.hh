@@ -10,7 +10,7 @@
  * unecesarry allocations and avoid indrection when possible.
  *
  * This makes the code a pain to write by hand, but this is not the
- * attention, it is designed to be used by automatically generated
+ * intention, it is designed to be used by automatically generated
  * code, from the blocks instrument designer.
  *
  * This is not how one might right the same code when dynamic

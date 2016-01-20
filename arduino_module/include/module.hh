@@ -52,6 +52,8 @@ private:
     static uint8_t msg_buffer_[number_controllers * sizeof(uint16_t)];
     static constexpr module_id mod_id_{ModuleID};	
 
+    // some helper functions to expand and work on controllers
+    // from the tuple container
     template<typename Controller>
     void setup_controller(const Controller& controller) const
     {
@@ -78,7 +80,19 @@ public:
     {
 	
     }
-    
+
+    /*
+     * @method setup
+     * @description 
+     *
+     * called once during microcontroller setup, we need
+     * to setup Serial usage and all controllers
+     * 
+     * TODO: we could move the serial suff out to its own place
+     * to allow composibility with other uses, however, today
+     * we are the main interface and so do it here for now.
+     * 
+     */
     void setup() const
     {
 	// Serial.begin(57600);
@@ -102,6 +116,22 @@ public:
 	
     }
 
+    /**
+     * @method execute_iteration
+     * @description
+     *
+     *    executed for each iteration of the main loop. process each
+     *    controller:
+     *
+     *            - determining if a control packet should be sent 
+     *              for a change in its state. 
+     *            - build and send, if necessary, module control packet  
+     */
+    void execute_iteration() {
+	
+    }
+    
+    
     // some here functions for creating elements of the protocol
     
     /**

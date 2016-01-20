@@ -23,7 +23,10 @@
     <script src="bower_components/angular-animate/angular-animate.js"></script>
     <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
     <script src="bower_components/lodash/dist/lodash.min.js"></script>
-    <script type="text/javascript" src="bower_components/restangular/dist/restangular.js"></script>
+    <script type="text/javascript"
+	    src="bower_components/restangular/dist/restangular.js"></script>
+    <script src="scripts/FileSaver.min.js"></script>
+    <script src="scripts/arduinoCode.js"></script>
     <script src="scripts/instruments.js"></script>
   </head>
 
@@ -62,9 +65,15 @@
 
 	  <div class="pure-menu pure-menu-horizontal" align=center>
 	    <ul class="pure-menu-list">
-	      <li class="pure-menu-item"><a href="./index.html" class="pure-menu-link">Home</a></li>
-	      <li class="pure-menu-item"><a href="./instruments.html" class="pure-menu-link">Instruments</a></li>
-	      <li class="pure-menu-item"><a href="./modules.html" class="pure-menu-link">Modules</a></li>
+	      <li class="pure-menu-item">
+		<a href="./index.html" class="pure-menu-link">Home</a>
+	      </li>
+	      <li class="pure-menu-item">
+		<a href="./instruments.html" class="pure-menu-link">Instruments</a>
+	      </li>
+	      <li class="pure-menu-item">
+		<a href="./modules.html" class="pure-menu-link">Modules</a>
+	      </li>
 	    </ul>
 	  </div>
 
@@ -87,44 +96,61 @@
 	      <div ng-repeat="instrument in instruments">
 		<uib-accordion close-others="oneAtATime">
 		  <uib-accordion-group heading="instrument.name"
-				       is-open="status.isFirstOpen" is-disabled="status.isFirstDisabled">
+				       is-open="status.isFirstOpen"
+				       is-disabled="status.isFirstDisabled">
 		    <uib-accordion-heading>
 		      {{instrument.name}}
-		      <a href="#"  ng-click="deleteInstrument(instrument.id)" title="Delete Instrument">
-						  (<span class="glyphicon glyphicon-minus"></span>)
+		      <a href="#"  ng-click="deleteInstrument(instrument.id)"
+			 title="Delete Instrument">
+			(<span class="glyphicon glyphicon-minus"></span>)
 		      </a>
 		    </uib-accordion-heading>
 		    
 		    <div class="pure-g">
-		      <div class="pure-u-1-3"><p><b>Module</b></p></div>
-		      <div class="pure-u-1-3"><p><b>Channel</b></p></div>
-		      <div class="pure-u-1-3">
+		      <div class="pure-u-1-4"><p><b>Module</b></p></div>
+		      <div class="pure-u-1-4"><p><b>Channel</b></p></div>
+		      <div class="pure-u-1-4">
 			<p>
 			  <a href="#/new/{{instrument.id}}" title="Add Module">
-			    <span class="glyphicon glyphicon-plus"></span>
+			    <span style="font-size:1.2em;"
+				  class="glyphicon glyphicon-plus"></span>
 			  </a>
 			</p>
+		      </div>
+		      <div class="pure-u-1-4">
+			<p><b>Arduino Code</b></p>
 		      </div>
 		    </div>
 
 		    <div ng-repeat="instrumentModule in instrumentModules">
 		      <div ng-if="instrument.id == instrumentModule.instrumentId"
 			   class="pure-g">
-		      <div class="pure-u-1-3" l-box>
+		      <div class="pure-u-1-4" l-box>
 			<p>
 			  {{getModuleName(instrumentModule.moduleId, modules)}}
 			</p>
 		      </div>
-		      <div class="pure-u-1-3" l-box>
+		      <div class="pure-u-1-4" l-box>
 			<p>
 			  {{instrumentModule.channel}}
 			</p>
 		      </div>
-		      <div class="pure-u-1-3">
+		      <div class="pure-u-1-4">
 			<p>
 		          <a href="#/edit/{{instrumentModule.id}}"
 			     title="Edit Instrument Module">
-			    <span class="glyphicon glyphicon-edit"></span>
+			    <span style="font-size:1.2em;"
+				  class="glyphicon glyphicon-edit"></span>
+			  </a>
+			</p>
+		      </div>
+		      <div class="pure-u-1-4">
+			<p>
+			  <a href="#"
+			     ng-click="createArduinoModuleCode(instrumentModule.moduleId)"
+			     title="Create Module Arduino Code">
+			    <span style="font-size:1.2em;"
+				  class="glyphicon glyphicon-save-file"></span>
 			  </a>
 			</p>
 		      </div>
@@ -136,7 +162,8 @@
 
 	    <script type="text/ng-template" id="editinstrumentmodule.html">
 	      <div class="page-header">
-		<h1>Edit Module for Instrument: <font color="#E6E6E6">{{instrumentName}}</font></h1>
+		<h1>Edit Module for Instrument:
+		  <font color="#E6E6E6">{{instrumentName}}</font></h1>
 	      </div>
 	      
 	      <form name="instrumentModuleForm" class="form-inline" role="form">
@@ -167,10 +194,12 @@
 		<!---div class="col-md-4 text-right"-->
 		<div class="col-md-4">
 		    <a href="#/" class="pure-button">Cancel</a>
-		    <button ng-click="save()" class="pure-button">Save</button>
+		    <button ng-click="save()"
+			    class="pure-button">Save</button>
 		    
 		    <button ng-click="destroy()"
-			    ng-show="module.id" class="pure-button">Delete</button>
+			    ng-show="module.id"
+			    class="pure-button">Delete</button>
 	        </div>
 		<!---/div-->  
 
@@ -181,10 +210,12 @@
 	    <script type="text/ng-template" id="addinstrumentmodule.html">
 
 	      <div class="page-header">
-		<h1>Add Module to Instrument: <font color="#E6E6E6">{{instrumentName}}</font></h1>
+		<h1>Add Module to Instrument:
+		  <font color="#E6E6E6">{{instrumentName}}</font></h1>
 	      </div>
 	      
-	      <form name="instrumentAddModuleForm" class="form-inline" role="form">		
+	      <form name="instrumentAddModuleForm" class="form-inline"
+		    role="form">
 
 		<div class="btn-group" uib-dropdown>
 		  <button id="btn-append-to-single-button" type="button"
