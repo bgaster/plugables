@@ -1,0 +1,8 @@
+libcxx
+*.[oa]
+*.*~
+*~
+.cabal-sandbox
+cabal.sandbox.config
+dist
+bower_components

@@ -1,0 +1,205 @@
+/**
+ * @name tuple
+ * @author Benedict R. Gaster
+ * @license See LICENSE.txt
+ * @description Basic implementation of C++ <tuple>
+ *
+ * Sadly, there is currently no port of the libc++ to AVR and as I needed some
+ * the basic functionlity it is implemented here.
+ * 
+ * A more robust implementation would do a lot more! Moreover, we only implement
+ * what we need and not the whole tuple interface...
+ *
+ *
+ * This implementation is based on ideas in the blog:
+ *
+ *   http://blogs.microsoft.co.il/sasha/2015/01/12/implementing-tuple-part-1/
+ *
+ * there were a small number of bugs in the original code, which were fixed 
+ * along the way
+ *
+ *
+ * In the long run I think we want to take LLVM libc++ and strip it back 
+ * to its template bare bones and use this as the basis for a more 
+ * complete AVR C++ library. But that is for another day.
+ */
+#pragma once
+
+#include <utility>
+#include <type_traits_mine>
+
+namespace std {
+
+/**
+ * @name tuple_element
+ * @description
+ */	
+template <size_t I, typename T>
+struct tuple_element
+{
+    T value_;
+
+    explicit tuple_element(T const& value) : value_(value)
+    {}
+    
+    // FIXME: implement <type_traits> and then we can implement
+    // std::move and so o
+    explicit tuple_element(T&& value) : value_(value) {}
+//    explicit tuple_element(T&& value) : value_(std::move(value)) {}
+
+    tuple_element() = default;
+    tuple_element(tuple_element const&) = default;
+    tuple_element(tuple_element&&) = default;
+    tuple_element& operator=(tuple_element const& rhs) = default;
+    tuple_element& operator=(tuple_element&&) = default;
+};
+
+namespace tuple_detail {
+
+template <size_t I, typename Head, typename... Tail>
+struct type_at_index
+{
+  using type = typename type_at_index<I-1, Tail...>::type;
+};
+
+template <typename Head, typename... Tail>
+struct type_at_index<0, Head, Tail...>
+{
+  using type = Head;
+};
+
+template <size_t I, typename... Types>
+using type_at_index_t = typename type_at_index<I, Types...>::type;
+
+//-----------------------------------------------------------------
+
+template <typename Sequences, typename... Types>
+struct tuple_impl; // undefined base; parameters are named for clarity only
+
+template <size_t... Indices, typename... Types>
+struct tuple_impl<index_sequence<Indices...>, Types...>
+  : public tuple_element<Indices, Types>...
+{
+    tuple_impl() = default;
+    tuple_impl(tuple_impl const&) = default;
+    tuple_impl(tuple_impl&&) = default;
+    tuple_impl& operator=(tuple_impl const& rhs) = default;
+    tuple_impl& operator=(tuple_impl&&) = default;
+
+
+    template <typename... OtherTypes>
+	explicit tuple_impl(OtherTypes&&... elements)
+	: tuple_element<Indices, Types>(elements)...
+    //	: tuple_element<Indices, Types>(std::forward<OtherTypes>(elements))...
+    {
+    }
+};
+
+template <typename>
+constexpr int count()
+{
+  return 0;
+}
+template <typename T, typename Head, typename... Tail>
+constexpr int count()
+{
+  return (std::is_same<T, Head>::value ? 1 : 0) + count<T, Tail...>();
+}
+
+template <typename>
+constexpr int find(int)
+{
+  return -1;
+}
+
+template <typename T, typename Head, typename... Tail>
+constexpr int find(int current_index = 0)
+{
+  return std::is_same<T, Head>::value
+    ? current_index
+    : find<T, Tail...>(current_index + 1);
+}
+
+}; // namespace tuple_detail
+
+template <typename... Types>
+class tuple
+    : public tuple_detail::tuple_impl<
+           typename make_index_sequence<sizeof...(Types)>::type, Types...>
+{
+private:
+    using base_t = tuple_detail::tuple_impl<
+       typename make_index_sequence<sizeof...(Types)>::type,
+       Types...>;
+public:
+    tuple() = default;
+    tuple(tuple const&) = default;
+    tuple(tuple&&) = default;
+    tuple& operator=(tuple const& rhs) = default;
+    tuple& operator=(tuple&&) = default;
+
+    template <typename... OtherTypes>
+    explicit tuple(OtherTypes&&... elements)
+	: base_t(elements...)
+	  // FIXME implement type_traits, move, forward, ...
+    //	: base_t(std::forward<OtherTypes>(elements)...)
+    {
+    }    
+
+    template <typename... OtherTypes>
+    explicit tuple(tuple<OtherTypes...> const& rhs) : base_t(rhs) {}
+
+    template <typename... OtherTypes>
+    explicit tuple(tuple<OtherTypes...>&& rhs) : base_t(rhs) {}
+    // FIXME implement type_traits, move, forward, ...
+    //base_t(std::move(rhs)) {}
+};
+
+
+template <size_t I, typename... Types>
+typename tuple_detail::type_at_index_t<I, Types...>::type const&
+get(tuple<Types...> const& tup)
+{
+  tuple_element<I, tuple_detail::type_at_index_t<I, Types...>>& base = tup;
+  return base.value_;    
+}
+
+template <size_t I, typename... Types>
+typename tuple_detail::type_at_index<I, Types...>::type&
+get(tuple<Types...>& tup)
+{
+    tuple_element<I, tuple_detail::type_at_index_t<I, Types...>>& base = tup;
+    return base.value_;
+}
+
+template <size_t I, typename... Types>
+const typename tuple_detail::type_at_index<I, Types...>::type&
+get(const tuple<Types...>& tup)
+{
+    const tuple_element<I, tuple_detail::type_at_index_t<I, Types...>>& base = tup;
+    return base.value_;
+}
+
+template <size_t I, typename... Types>
+typename std::remove_reference_t<
+    tuple_detail::type_at_index_t<I, Types...>>::type&&
+get(tuple<Types...>&& tup)
+{
+    tuple_element<I, tuple_detail::type_at_index_t<I, Types...>>& base = tup;
+    return base.value_;
+}
+
+/*
+template <typename T, typename... Types>
+T& get(tuple<Types...>& tup)
+{
+  static_assert(
+      tuple_detail::count<T, Types...>() == 1,
+      "T must appear exactly once in ...Types");
+  
+  return get<tuple_detail::find<T, Types...>()>(tup);
+}
+*/
+
+
+} //namespace std

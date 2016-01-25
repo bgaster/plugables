@@ -152,13 +152,17 @@ class controller <
                          Pin>
 {
 private:
+    // FIXME: this requies space, but allows us to only send changes
+    int old_value;
+    
 public:
     typedef detail::controller_policy<
                          Id,
                          controller_type::LINEAR_POT,
                          Pin> controller_policy_;
     
-    constexpr controller() 
+    constexpr controller() :
+	old_value(0) 
     {
     }
 

@@ -6,7 +6,8 @@
  */
 #pragma once
 
-//#include <Arduino.h>
+#include <Arduino.h>
+
 #include <stdint.h>
 
 #include <tuple>
@@ -95,11 +96,11 @@ public:
      */
     void setup() const
     {
-	// Serial.begin(57600);
+	Serial.begin(57600);
 
-	// while (!Serial) {
-	//     ; // wait for serial port to connect. Needed for Leonardo only
-	// }
+	while (!Serial) {
+	     ; // wait for serial port to connect. Needed for Leonardo only
+	}
 
 	// // protocol requires we write 65 ('A') and then
 	// // wait to handshake with 66 ('B') on the return

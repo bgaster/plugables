@@ -89,8 +89,10 @@ function CreateModuleControllerCtrl(
 			    "type": "linearPot",
 			    "pin1": "N/A",
 			    "pin2": "N/A",
+			    "pin3": "N/A",
 			    "controlCommand1": -1,
 			    "controlCommand2": -1,
+			    "controlCommand3": -1,
 			    "moduleId": moduleId
 			};
     
@@ -109,9 +111,14 @@ function CreateModuleControllerCtrl(
 	$scope.controller.pin1 = pin;
     }
 
-    // set the controller's pin1
+    // set the controller's pin2
     $scope.setPin2 = function(pin) {
 	$scope.controller.pin2 = pin;
+    }
+
+    // set the controller's pin3
+    $scope.setPin3 = function(pin) {
+	$scope.controller.pin3 = pin;
     }
 
     // save the controller to the database and route to /
@@ -193,9 +200,14 @@ function EditModuleControllerCtrl(
 	$scope.controller.pin1 = pin;
     }
 
-    // set controller pin 1
+    // set controller pin 2
     $scope.setPin2 = function(pin) {
 	$scope.controller.pin2 = pin;
+    }
+
+    // set controller pin 3
+    $scope.setPin3 = function(pin) {
+	$scope.controller.pin3 = pin;
     }
 
     // delete original from database and route to /

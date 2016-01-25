@@ -98,12 +98,11 @@
 		    </uib-accordion-heading>
 		    
 		    <div class="pure-g">
-		      <div class="pure-u-1-6"><p><b>Controller</b></p></div>
-		      <div class="pure-u-1-6"><p><b>Type</b></p></div>
-		      <div class="pure-u-1-6"><p><b>Pin 1</b></p></div>
-		      <div class="pure-u-1-6"><p><b>Pin 2</b></p></div>
-		      <div class="pure-u-1-6"><p><b>Control Cmd 1/2</b></p></div>
-		      <div class="pure-u-1-6">
+		      <div class="pure-u-1-5"><p><b>Controller</b></p></div>
+		      <div class="pure-u-1-5"><p><b>Type</b></p></div>
+		      <div class="pure-u-1-5"><p><b>Pin 1/2/3</b></p></div>
+		      <div class="pure-u-1-5"><p><b>Control Cmd 1/2/3</b></p></div>
+		      <div class="pure-u-1-5">
 			<p>
 			  <a href="#/new/{{module.id}}" title="Add Contoller">
 			    <span class="glyphicon glyphicon-plus"></span>
@@ -115,36 +114,56 @@
 		    <div ng-repeat="moduleController in moduleControllers">
 		      <div ng-if="module.id == moduleController.moduleId"
 			   class="pure-g">
-		      <div class="pure-u-1-6" l-box>
+		      <div class="pure-u-1-5" l-box>
 			<p>
 			  {{moduleController.name}}
 			</p>
 		      </div>
-		      <div class="pure-u-1-6" l-box>
+		      <div class="pure-u-1-5" l-box>
 			<p>
 			  {{moduleController.type}}
 			</p>
 		      </div>
-		      <div class="pure-u-1-6" l-box>
+		      
+		      <div ng-if="moduleController.controlCommand2 == -1 &&
+                                  moduleController.controlCommand3 == -1"
+			   class="pure-u-1-5" l-box>
 			{{moduleController.pin1}}
 		      </div>
-		      <div class="pure-u-1-6" l-box>
+		      <div ng-if="moduleController.controlCommand2 != -1 &&
+                                  moduleController.controlCommand3 == -1"
+			   class="pure-u-1-5" l-box>
+			{{moduleController.pin1}}
 			{{moduleController.pin2}}
 		      </div>
-
-		      <div ng-if="moduleController.controlCommand2 == -1"
-			   class="pure-u-1-6">
-			&nbsp;&nbsp;&nbsp;&nbsp;
-			{{moduleController.controlCommand1}}&nbsp;&nbsp;N/A
+		      <div ng-if="moduleController.controlCommand2 != -1 &&
+                                  moduleController.controlCommand3 != -1"
+			   class="pure-u-1-5" l-box>
+			{{moduleController.pin1}}
+			{{moduleController.pin2}}
+			{{moduleController.pin3}}
 		      </div>
+
+		      <div ng-if="moduleController.controlCommand2 == -1 &&
+                                  moduleController.controlCommand3 == -1"
+			   class="pure-u-1-5">
+			&nbsp;&nbsp;&nbsp;&nbsp;
+			{{moduleController.controlCommand1}}&nbsp;&nbsp;
+		      </div>
+		      
 		      <div ng-if="moduleController.controlCommand2 != -1"
-			   class="pure-u-1-6">
+			   class="pure-u-1-5">
 			&nbsp;&nbsp;&nbsp;&nbsp;
 			{{moduleController.controlCommand1}}&nbsp;&nbsp;
 			{{moduleController.controlCommand2}}
+			<div ng-if="moduleController.controlCommand3 != -1"
+			     class="pure-u-1-5">
+			  &nbsp;&nbsp;
+			  {{moduleController.controlCommand3}}
+			</div>
 		      </div>
 
-		      <div class="pure-u-1-6">
+		      <div class="pure-u-1-5">
 			<p>
 		          <a href="#/edit/{{moduleController.id}}"
 			     title="Edit Module Controller">
@@ -160,36 +179,30 @@
 
 	    <script type="text/ng-template" id="editmodulecontroller.html">
 	      <div class="page-header">
-		<h1>Edit Controller for Module: <font color="#E6E6E6">{{moduleName}}</font></h1>
+		<h1>Edit Controller <font color="#E6E6E6">{{controller.name}}</font> for module <font color="#E6E6E6">{{moduleName}}</font></h1>
 	      </div>
 
 	      <div class="pure-g">
-		<div class="pure-u-1-6">
-		  <h4>Controller<h4>
-		</div>
-		<div class="pure-u-1-6">
+		<div class="pure-u-1-5">
 		  <h4>Type</h4>
 		</div>
-		<div class="pure-u-1-6">
-		  <h4>Pins 1 & 2</h4>
+		<div class="pure-u-1-5">
+		  <h4>Pins 1 & 2 & 3</h4>
 		</div>
-		<div class="pure-u-1-6">
+		<div class="pure-u-1-5">
 		  <h4>Control Cmd 1</h4>
 		</div>
-		<div class="pure-u-1-6">
+		<div class="pure-u-1-5">
 		  <h4>Control Cmd 2</h4>
+		</div>
+		<div class="pure-u-1-5">
+		  <h4>Control Cmd 3</h4>
 		</div>
 	      </div>
 	      
 	      <form name="moduleControllerForm" class="form-inline" role="form">
 		 <div class="pure-g">
-		   <div class="pure-u-1-6">
-		     <div class="form-group" ng-show="controller.id">
-		       <label for="id"></label>
-		       <span id="id" name="id"><b>{{controller.name}}</b></span>
-		     </div>
-		   </div>
-		   <div class="pure-u-1-6">
+		   <div class="pure-u-1-5">
 		     <div class="btn-group" uib-dropdown>
 		       <button id="btn-append-to-single-button" type="button"
 			       id="moduleSelectButton"
@@ -205,7 +218,7 @@
 		     </div>
 		   </div>
 		   
-		   <div class="pure-u-1-6">
+		   <div class="pure-u-1-5">
 		     <div class="btn-group" uib-dropdown>
 		       <button id="btn-append-to-single-button" type="button"
 			       id="moduleSelectButton"
@@ -217,7 +230,7 @@
 			 <li ng-repeat="pin in pins">
 			   <a ng-click="setPin1(pin.pin)">{{pin.pin}}</a>
 			 </li>
-		    </ul>
+		       </ul>
 		     </div>
 		     <div class="btn-group" uib-dropdown>
 		       <button id="btn-append-to-single-button" type="button"
@@ -232,10 +245,23 @@
 			 </li>
 		       </ul>
 		     </div>
+		     <div class="btn-group" uib-dropdown>
+		       <button id="btn-append-to-single-button" type="button"
+			       id="moduleSelectButton"
+			       class="pure-button" uib-dropdown-toggle>
+			 {{controller.pin3}} <span class="caret"></span>
+		       </button>
+		       <ul class="dropdown-menu" uib-dropdown-menu
+			   role="menu" aria-labelledby="btn-append-to-single-button">
+			 <li ng-repeat="pin in pins">
+			   <a ng-click="setPin3(pin.pin)">{{pin.pin}}</a>
+			 </li>
+		       </ul>
+		     </div>
 		     
 		   </div>
 		   
-		   <div class="pure-u-1-6">
+		   <div class="pure-u-1-5">
 		     <div class="form-group">
 		       <input name="controlCmd1" type="number"
 			      id="controlCmd1" value="{{controller.controlCommand1}}"
@@ -243,11 +269,20 @@
 		     </div>		     
 		   </div>
 
-		   <div class="pure-u-1-6">
+		   <div class="pure-u-1-5">
 		     <div class="form-group">
 		       <input name="controlCmd2" type="number"
 			      id="controlCmd2" value="{{controller.controlCommand2}}"
 			      ng-model="controller.controlCommand2">
+		     </div>
+		     
+		   </div>
+
+		   <div class="pure-u-1-5">
+		     <div class="form-group">
+		       <input name="controlCmd3" type="number"
+			      id="controlCmd3" value="{{controller.controlCommand3}}"
+			      ng-model="controller.controlCommand3">
 		     </div>
 		     
 		   </div>
@@ -277,13 +312,16 @@
 		  <h4>Type</h4>
 		</div>
 		<div class="pure-u-1-6">
-		  <h4>Pins 1 & 2</h4>
+		  <h4>Pins 1 & 2 & 3</h4>
 		</div>
 		<div class="pure-u-1-6">
 		  <h4>Control Cmd 1</h4>
 		</div>
 		<div class="pure-u-1-6">
 		  <h4>Control Cmd 2</h4>
+		</div>
+		<div class="pure-u-1-6">
+		  <h4>Control Cmd 3</h4>
 		</div>
 	      </div>
 	      
@@ -342,6 +380,20 @@
 			 </li>
 		       </ul>
 		     </div>
+
+		     <div class="btn-group" uib-dropdown>
+		       <button id="btn-append-to-single-button" type="button"
+			       id="moduleSelectButton"
+			       class="pure-button" uib-dropdown-toggle>
+			 {{controller.pin3}} <span class="caret"></span>
+		       </button>
+		       <ul class="dropdown-menu" uib-dropdown-menu
+			   role="menu" aria-labelledby="btn-append-to-single-button">
+			 <li ng-repeat="pin in pins">
+			   <a ng-click="setPin3(pin.pin)">{{pin.pin}}</a>
+			 </li>
+		       </ul>
+		     </div>
 		   </div>
 
 		   <div class="pure-u-1-6">
@@ -357,6 +409,14 @@
 		       <input name="controlCmd2" type="number"
 			      id="controlCmd2" value="{{controller.controlCommand2}}"
 			      ng-model="controller.controlCommand2">
+		     </div>
+		   </div>
+
+		   <div class="pure-u-1-6">
+		     <div class="form-group">
+		       <input name="controlCmd3" type="number"
+			      id="controlCmd3" value="{{controller.controlCommand3}}"
+			      ng-model="controller.controlCommand3">
 		     </div>
 		   </div>
 		   

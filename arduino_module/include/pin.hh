@@ -15,39 +15,51 @@
  *
  * This is not how one might right the same code when dynamic
  * behaviour is necessary or space/performance is less of a conern.
+ *
+ * FIXME: Added pound define to check we are compiling for Nano.
+ *        no real reason that we limit ourselves to Nano, just at 
+ *        the moment the design is based around that, shold not be
+ *        a big change.
  */
 #pragma once
 
+#include <Arduino.h>
+
 #include <stdint.h>
-#include <helper.hh>
 
 // type for Arduino pins
-typedef int8_t pin_id;
+typedef uint8_t pin_id;
 
-// This is so we can debug code without Arduino library
-#if defined(__FAKE_IT__)
+/**
+ * @description Mapping for digital pins on Nano
+ * For some reason Arduino.h does not define these.
+ * 
+ * Note: For Nano Arduino defines A0 = 13, ..., so 
+ * but this is increased on more pinned devices, e.g. mega.
+ * In this case we just need to add more digial pins, but
+ * of course, we would then need to add check for who we are building 
+ * for.
+ */
 enum PIN {
-    A0 = 0,
-    A1 = 1,
-    A2 = 2,
-    A3 = 3,
-    A4 = 4,
-    A5 = 5,
-    A6 = 6,
-    A7 = 7,
+    D0 = 0,
+    D1 = 1,
+    D2 = 2,
+    D3 = 3,
+    D4 = 4,
+    D5 = 5,
+    D6 = 6,
+    D7 = 7,
+    D8 = 8,
+    D9 = 9,
+    D10 = 10,
+    D11 = 11,
+    D12 = 12,
+    D13 = 13,
+    D14 = 14,
 
-    D0 = 8,
-    D1 = 9,
-    D2 = 10,
-    D3 = 11,
-    D4 = 12,
-    D5 = 13,
-    D6 = 14,
-    D7 = 15,
-
-    PIN_UNDEFINED
+    // FIXME: if we ever have a large number of pins :-)
+    PIN_UNDEFINED = 127
 };
-#endif // __FAKE_IT__
 
 //------------------------------------------------------------------------------
 
@@ -58,13 +70,14 @@ struct modify_policy_digital_read
 {
     void setup() const
     {
-	// add pin setup code here
+	// call Arduino library to set pin for input
+	pinMode(Id, INPUT); 
     }
     
     uint8_t read(void)
     {
-	// return digital_read()
-	return 0;
+	// perform digital read
+	return digitalRead(Id);
     }    
 };
 
@@ -73,12 +86,14 @@ struct modify_policy_digital_write
 {
     void setup() const
     {
-	// add pin setup code here	
+	// call Arduino library to set pin for output
+	pinMode(Id, OUTPUT); 
     }
     
     void write(uint8_t value)
     {
-	// digital_write()
+	// peform digital write
+	digitalWrite(Id, value);
     }    
 };
 
@@ -87,13 +102,13 @@ struct modify_policy_analog_read
 {
     void setup() const
     {
-	// add pin setup code here
+	// nothing to do for analog pin on Arduino
     }
     
     uint8_t read(void)
     {
-	// return analog_read()
-	return 0;
+	// perform analog read
+	return analogRead(Id);
     }    
 };
 
@@ -104,7 +119,7 @@ struct modify_policy_undefined {
 
 //------------------------------------------------------------------------------
 
-template <pin_id Id, template<pin_id Id_> typename pin_policy>
+template <pin_id Id, template<pin_id Id_> class pin_policy>
 struct pin : public pin_policy<Id>
 {
     constexpr pin() 

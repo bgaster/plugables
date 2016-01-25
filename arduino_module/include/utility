@@ -1,0 +1,51 @@
+/**
+ * @name utility
+ * @author Benedict R. Gaster
+ * @license See LICENSE.txt
+ * @description Basic implementation of C++ <utility>
+ *
+ * Sadly, there is currently no port of the libc++ to AVR and as I needed some
+ * the basic functionlity it is implemented here.
+ * 
+ * A more robust implementation would check that we are actually indexing by
+ * an intergral type and so on, but this will do for now.
+ */	
+#pragma once
+
+#include <stddef.h>
+#include <type_traits_mine>
+
+// based on http://stackoverflow.com/a/17426611/410767 by Xeo
+namespace std
+{
+
+template <size_t... Ints>
+struct index_sequence
+{
+    using type = index_sequence;
+    using value_type = size_t;
+    static constexpr size_t size() { return sizeof...(Ints); }
+};
+
+// --------------------------------------------------------------
+
+template <class Sequence1, class Sequence2>
+struct _merge_and_renumber;
+
+template <size_t... I1, size_t... I2>
+struct _merge_and_renumber<index_sequence<I1...>, index_sequence<I2...>>
+    : index_sequence<I1..., (sizeof...(I1)+I2)...>
+{ };
+
+// --------------------------------------------------------------
+
+template <size_t N>
+struct make_index_sequence
+    : _merge_and_renumber<typename make_index_sequence<N/2>::type,
+    typename make_index_sequence<N - N/2>::type>
+{ };
+
+template<> struct make_index_sequence<0> : index_sequence<> { };
+template<> struct make_index_sequence<1> : index_sequence<0> { };
+
+} // namespace std
