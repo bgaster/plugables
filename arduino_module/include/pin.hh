@@ -65,6 +65,10 @@ enum PIN {
 
 namespace blocks {
 
+//FIXME: make read templated on return type
+//       this will allow return uint8_t or uint16_t
+//       i suppose we could have two read functions?
+
 template<pin_id Id>
 struct modify_policy_digital_read
 {
@@ -74,7 +78,7 @@ struct modify_policy_digital_read
 	pinMode(Id, INPUT); 
     }
     
-    uint8_t read(void)
+    uint16_t read(void)
     {
 	// perform digital read
 	return digitalRead(Id);
@@ -105,7 +109,7 @@ struct modify_policy_analog_read
 	// nothing to do for analog pin on Arduino
     }
     
-    uint8_t read(void)
+    uint16_t read(void)
     {
 	// perform analog read
 	return analogRead(Id);

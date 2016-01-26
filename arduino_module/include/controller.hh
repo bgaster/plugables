@@ -15,13 +15,19 @@
  *
  * This is not how one might right the same code when dynamic
  * behaviour is necessary or space/performance is less of a conern.
+ *
+ *
+ * Note: 0 is not a valid Controller ID. This is checked and a compile
+ *       time error is report if the invariant is invalid.
+ *
  */
 #pragma once
 
 #include <stdint.h>
 
-#include <helper.hh>
+#include <autility.hh>
 #include <pin.hh>
+#include <protocol.hh>
 
 #if defined(__DEBUG__)
 #include <stdio.h>
@@ -56,7 +62,7 @@ namespace detail {
  * @description
  */
 template<
-    controller_id Id,
+    controller_id Id, // Id == 0 is not valid!
     controller_type T,
     typename Pin>
 class controller_policy {
@@ -73,7 +79,10 @@ private:
 public:
     // only default constructor exposed to application
     constexpr controller_policy()
-    { }
+    {
+	// Verify that Controller ID is non-zero
+	static_assert(Id != 0, "0 is not a valid Controller ID");
+    }
 
     // as this intended to be allocated only once, at compile time,
     // then delete copy/assignment constructors
@@ -153,26 +162,65 @@ class controller <
 {
 private:
     // FIXME: this requies space, but allows us to only send changes
-    int old_value;
+    int old_value_;
     
 public:
     typedef detail::controller_policy<
                          Id,
                          controller_type::LINEAR_POT,
                          Pin> controller_policy_;
-    
+
+    /**
+     * @constructor controller
+     * @description
+     * 
+     */
     constexpr controller() :
-	old_value(0) 
+    old_value_(0) 
     {
     }
 
-    /*
+    /**
+     * @constructor controller
+     * @description
+     */
+    // controller() :
+    // 	old_value(0)
+    // {
+    // }
+    
+    /**
      * @method setup
      *
      * @description
      */
-    constexpr void setup() const {
+    constexpr void setup() const
+    {
 	controller_policy_::get_pin().setup();
+    }
+
+    /**
+     * @method run
+     * @description
+     * @returns a valid control packet (non-zero), or 0
+     *
+     * FIXME: add constexprs to get pot range, midi range, and so on, i.e.
+     * avoid using magic numbers
+     */
+    control_packet run()
+    {
+	// remap the value to MINI limits,
+	// perform the remapping now to limit variation
+	uint16_t value =
+	    utils::remap<0, 1024, 0, 128>(controller_policy_::get_pin().read());
+	
+	if (old_value_ != value) {
+	    old_value_ = value;
+
+	    return make_control_packet<Id>(value);
+	}
+
+	return invalid_control_packet();
     }
 };
 

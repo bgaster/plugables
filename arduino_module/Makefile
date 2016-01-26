@@ -6,6 +6,7 @@ USR_INCLUDE = ./include
 # --- mega2560 ide 1.6
 BOARD_TAG    = nano
 BOARD_SUB    = atmega328
+MONITOR_PORT = /dev/cu.wchusbserial1410
 #MONITOR_PORT = /dev/ttyACM0
 #ARDUINO_DIR  = /where/you/installed/arduino-1.6.5
 #AVRDUDE_ARD_PROGRAMMER = stk500v2

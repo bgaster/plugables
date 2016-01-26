@@ -13,8 +13,8 @@
 #include <tuple>
 #include <utility> // C++14 integer sequeneces needed for tuple indexing
 
+#include <protocol.hh>
 #include <controller.hh>
-#include <helper.hh>
 
 // currently there is a bug in GCC which means varadic templates are
 // not being expanded propably in some cases:
@@ -39,18 +39,17 @@ typedef uint8_t module_id;
  *          bad things, dont do it!
  *          Copy constructor and assignment operator deleted
  */
-template<module_id ModuleID, typename... Controllers>
+template<uint32_t baud, module_id ModuleID, typename... Controllers>
 class module
 {
-public:
-    typedef uint16_t control_packet;
-
 private:
-    static constexpr std::tuple<Controllers...> controllers_{};
+    static std::tuple<Controllers...> controllers_;
 
     static constexpr uint8_t number_controllers{sizeof...(Controllers)};
+
+    static protocol<baud, ModuleID, number_controllers> protocol_;
     
-    static uint8_t msg_buffer_[number_controllers * sizeof(uint16_t)];
+    //static uint8_t msg_buffer_[number_controllers * sizeof(control_packet)];
     static constexpr module_id mod_id_{ModuleID};	
 
     // some helper functions to expand and work on controllers
@@ -64,9 +63,24 @@ private:
     template<size_t... I>
     void setup_controllers(std::index_sequence<I...>) const
     {
-	// it would be nice to call setup inline, but GCC is broken in
-	// this regard!
-	setup_controller(std::get<I>(controllers_)...);
+	int ignore[] { (setup_controller(std::get<I>(controllers_)), 0)... };
+	(void) ignore; // silence compiler warnings about the unused local variable
+    }
+
+    template<typename Controller>
+    void run_controller(Controller& controller)
+    {
+	control_packet packet = controller.run();
+	if (packet != invalid_control_packet()) {
+	    protocol_.push_control_packet(packet);
+	}
+    }
+
+    template<size_t... I>
+    void run_controllers(std::index_sequence<I...>)
+    {
+	int ignore[] { (run_controller(std::get<I>(controllers_)), 0)... };
+	(void) ignore; // silence compiler warnings about the unused local variable
     }
 public:
     // no copying or assingment of protocol
@@ -96,25 +110,12 @@ public:
      */
     void setup() const
     {
-	Serial.begin(57600);
-
-	while (!Serial) {
-	     ; // wait for serial port to connect. Needed for Leonardo only
-	}
-
-	// // protocol requires we write 65 ('A') and then
-	// // wait to handshake with 66 ('B') on the return
-	// Serial.write(65);
-	// int inByte = 0;
-	// while (inByte  != 66) {	    
-	//     inByte = Serial.read();
-	// }
-
+	// setup protocol interface
+	protocol_.setup();
+	
 	// setup the controllers
-	setup_controllers<sizeof...(Controllers)-1>(
-	    std::index_sequence<sizeof...(Controllers)-1>());
-	
-	
+	setup_controllers(
+	    std::make_index_sequence<sizeof...(Controllers)-1>());	
     }
 
     /**
@@ -128,36 +129,32 @@ public:
      *              for a change in its state. 
      *            - build and send, if necessary, module control packet  
      */
-    void execute_iteration() {
+    void run() {
+	//run each controller to produce a control packets
+	run_controllers(
+	    std::make_index_sequence<sizeof...(Controllers)>());
 	
-    }
-    
-    
-    // some here functions for creating elements of the protocol
-    
-    /**
-     * @method control_packet
-     * @description 
-     */
-    static inline control_packet make_control_packet(uint8_t id, uint8_t value)
-    {
-	return (value << 8 | id);
-    }
-
+	// send any generated control packets
+	protocol_.send();
+    }    
 };
 
 //------------------------------------------------------------------------------
 // allocate any statics and static constexprs
 
-template<module_id ModuleId, typename... Controllers>
-uint8_t module<ModuleId, Controllers...>::msg_buffer_[] = {0};
+template<uint32_t baud, module_id ModuleId, typename... Controllers>
+protocol<
+    baud,
+    ModuleId,
+    module<baud, ModuleId, Controllers...>::number_controllers>
+module<baud, ModuleId, Controllers...>::protocol_;
 
-template<module_id ModuleId, typename... Controllers>
-constexpr std::tuple<Controllers...>
-module<ModuleId, Controllers...>::controllers_;
+template<uint32_t baud, module_id ModuleId, typename... Controllers>
+std::tuple<Controllers...>
+module<baud, ModuleId, Controllers...>::controllers_;
 
-template<module_id ModuleId, typename... Controllers>
-constexpr module_id module<ModuleId, Controllers...>::mod_id_;
+template<uint32_t baud, module_id ModuleId, typename... Controllers>
+constexpr module_id module<baud, ModuleId, Controllers...>::mod_id_;
 
 }; // namespace blocks
 
