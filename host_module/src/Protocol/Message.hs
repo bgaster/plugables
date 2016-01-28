@@ -26,6 +26,8 @@ import Control.Monad.Trans.State
 import Control.Monad (unless)
 import Pipes
 
+import Data.ByteString.Builder
+
 --------------------------------------------------------------------------------
 -- simple state transformer (with IO) to implictly track the active serialport
 -- handle
@@ -66,9 +68,9 @@ connectController :: FilePath ->
                      S.CommSpeed ->
                      SerialPort ()
 connectController port cspeed = do
-  s <- liftIO $ S.openSerial port S.defaultSerialSettings --{ S.commSpeed = cspeed }
+  s <- liftIO $ S.openSerial port S.defaultSerialSettings { S.commSpeed = cspeed }
   -- now we need to get in sync with the controller
-  inSync s
+  --inSync s
   put s
   pure ()
   where inSync s = (liftIO $ S.recv s 1) >>=
@@ -96,9 +98,10 @@ readMessage = aux "" >>= pure
           v <- get >>= liftIO . flip (S.recv) 1
           if v == ""
             then aux bs
-            else if v == messageTerminator
-                 then pure bs
-                 else aux $ B.append bs v
+            else do --_ <- lift $ liftIO $ print (toLazyByteString (byteStringHex v))
+                    if v == messageTerminator
+                      then pure bs
+                      else aux $ B.append bs v
 
 ---------------------------------------------------------------------------------
 -- presume: SerialPort is correctly initialized

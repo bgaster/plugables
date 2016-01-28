@@ -86,7 +86,8 @@ public:
 	    Serial.write(
 	     	reinterpret_cast<const char*>(packets_),
 	     	num_packets_ * sizeof(control_packet));	   
-
+	    Serial.write(0x0A); // newline termiates message
+	    
 	    num_packets_ = 0;
 	}
     }

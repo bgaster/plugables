@@ -23,6 +23,7 @@ executable hostController
                        hmidi, 
                        timers-updatable, 
                        bytestring, 
+                       bytedump, 
                        serialport, 
                        pipes, 
                        binary-strict,

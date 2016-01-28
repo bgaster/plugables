@@ -19,8 +19,8 @@ output_channel = 1
 
 handle :: Producer B.ByteString SerialPort ()
 handle = do
-  let port = "/dev/ttys003"
-  s <- lift $ connectController port S.CS57600
+  let port = "/dev/cu.wchusbserial1410"
+  s <- lift $ connectController port S.CS9600 --S.CS57600
   (message >> lift disconnectController)
 
 --loop :: Producer B.ByteString SerialPort ()
