@@ -14,6 +14,9 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 module Protocol.Packet (
+  ControlID,
+  ControlValue,
+  ModuleID,
   ControlPacket(..),
   ModuleControllerPacket(..),
   packet
@@ -30,13 +33,11 @@ import Data.Word
 
 import Protocol.Message
 
+import AppState
+
 -----------------------------------------------------------------------------
 -- Datatypes for control and module packets
 -----------------------------------------------------------------------------
-
-type ControlID    = Word8
-type ControlValue = Word8
-type ModuleID     = Word8
 
 data ControlPacket =
   ControlPacket

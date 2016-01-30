@@ -1,47 +1,65 @@
+{-|
+Module      : Main
+Description : Program entry code, argument passing, create and run pipeline
+Copyright   : (c) Benedict R. Gaster, 2016
+License     : BSD3
+Maintainer  : benedict.gaster@email.com
+Stability   : experimental
+Portability : Not sure!
+-}
+
 import System.IO
 import System.Environment
 import System.Exit
 
-import System.MIDI
-import System.MIDI.Utility
-
-import System.Timer.Updatable
-
 import qualified Data.ByteString.Char8 as B
 import qualified System.Hardware.Serialport as S
 
-import Protocol.Message
-import Protocol.Packet
 import Control.Monad.Trans.State
 import Pipes
 
-output_channel = 1
+import Protocol.Message
+import Protocol.Packet
+import Midi.Message
+import AppState
 
-handle :: Producer B.ByteString SerialPort ()
-handle = do
-  let port = "/dev/cu.wchusbserial1410"
-  s <- lift $ connectController port S.CS9600 --S.CS57600
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+data Opts = Opts { tables :: String,
+                   port   :: String }
+
+showUsage = do
+  putStrLn "Usage: hostController <lookuptable-file> [-vh] -p <port>"
+  exitWith ExitSuccess
+
+getOpts :: IO Opts
+getOpts = do xs <- getArgs
+             return $ process (Opts "" "") xs
+  where
+    process opts ("-h":xs)   = process opts xs
+    process opts ("-v":xs)   = process opts xs
+    process opts ("-p":p:xs) = process (opts { port = p }) xs
+    process opts (x:xs)      = process (opts { tables = x }) xs
+    process opts []          = opts
+
+
+handle :: Opts -> Producer B.ByteString AppM ()
+handle opts = do
+--  let port = "/dev/cu.wchusbserial1410"
+  lift $ connectController (port opts) S.CS9600 --S.CS57600
+  lift $ connectDevice (tables opts)
   (message >> lift disconnectController)
 
---loop :: Producer B.ByteString SerialPort ()
-loop :: Effect SerialPort ()
-loop = for handle (packet ~> lift . liftIO . print)
+arduinoToMidiPipe :: Opts -> Effect AppM ()
+arduinoToMidiPipe opts = for (handle opts) packet >-> midi
+
+loop :: Opts -> Effect AppM ()
+loop opts = for (handle opts) (packet ~> lift . liftIO . print)
 
 main :: IO ()
 main = do
-  evalStateT (runEffect loop) undefined
-
-{-
-main2 :: IO ()
-main2 = do
-  dst <- selectOutputDevice "please select an output device" Nothing
-  outconn <- openDestination dst
-
-  send outconn $ MidiMessage output_channel $ NoteOn  49 100
-
-  t <- parallel (send outconn $ MidiMessage output_channel $ NoteOff 49 0 ) $ 100 * 1000
-  waitIO t
-
-  close outconn
-  putStrLn "exit"   
--}
+  opts <- getOpts
+  if (null (tables opts) || null (port opts)) 
+    then showUsage
+    else evalStateT (runEffect (loop opts)) emptyAppState

@@ -13,7 +13,7 @@ Here is a longer description of this module, containing some
 commentary with @some markup@.
 -}
 module Protocol.Message (
-  SerialPort,
+---  SerialPort,
   connectController,
   disconnectController,
   message
@@ -28,16 +28,18 @@ import Pipes
 
 import Data.ByteString.Builder
 
+import AppState
+
 --------------------------------------------------------------------------------
 -- simple state transformer (with IO) to implictly track the active serialport
 -- handle
 
 -- | The 'MessageState' type is the type of values stored in the SerialPort monad
-type MessageState = S.SerialPort
+--type MessageState = S.SerialPort
 
 -- | The 'SerialPort' type is a state monad (with IO support) used to control 
 --   access/communication to the Arduino hardware
-type SerialPort = StateT MessageState IO
+--type SerialPort = StateT MessageState IO
 
 --------------------------------------------------------------------------------
 
@@ -66,36 +68,27 @@ messageTerminator = "\n"
 -- It takes two arguments, of type FilePath and S.CommSpeed, respectively
 connectController :: FilePath ->
                      S.CommSpeed ->
-                     SerialPort ()
+                     AppM ()
 connectController port cspeed = do
   s <- liftIO $ S.openSerial port S.defaultSerialSettings { S.commSpeed = cspeed }
   -- now we need to get in sync with the controller
-  --inSync s
-  put s
+  putPort s
   pure ()
-  where inSync s = (liftIO $ S.recv s 1) >>=
-                   \v -> do
---                     liftIO $ print v
-                     if v == recvSyncMessage
-                       then do liftIO $ S.send s sendSyncMessage
-                               liftIO $ S.flush s
-                               pure ()
-                       else inSync s
 
 -- | The 'disconnectController' function closes, an already open, serial
 --   connection
-disconnectController :: SerialPort ()
-disconnectController = get >>= liftIO . S.closeSerial
+disconnectController :: AppM ()
+disconnectController = getPort >>= liftIO . S.closeSerial
 
 --------------------------------------------------------------------------------
 
 -- | The 'readMessage' function reads a message from the serial port of the
 --   connected Arduino
 -- It returns the read message as a 'ByteString'
-readMessage :: SerialPort B.ByteString
+readMessage :: AppM B.ByteString
 readMessage = aux "" >>= pure
   where aux bs = do
-          v <- get >>= liftIO . flip (S.recv) 1
+          v <- getPort >>= liftIO . flip (S.recv) 1
           if v == ""
             then aux bs
             else do --_ <- lift $ liftIO $ print (toLazyByteString (byteStringHex v))
@@ -110,7 +103,7 @@ readMessage = aux "" >>= pure
 
 -- | The 'message' function produces messages, read from the Arduino's
 --   serial port, one at a time via the 'Producer' interface
-message :: Producer B.ByteString SerialPort ()
+message :: Producer B.ByteString AppM ()
 message = do
   msg <- lift readMessage
   unless (msg == terminateMessage) $ do

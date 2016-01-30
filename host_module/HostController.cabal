@@ -29,7 +29,10 @@ executable hostController
                        binary-strict,
                        lens,
                        transformers,
-                       mtl
+                       mtl,
+                       vector,
+                       parsec,
+                       parsec-numbers
 
   hs-source-dirs:      src
   default-language:    Haskell2010
