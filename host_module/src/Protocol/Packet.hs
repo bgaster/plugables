@@ -6,12 +6,11 @@ Description : Producer interface for symbolic representation of messages
               from Arduino controller
 Copyright   : (c) Benedict R. Gaster, 2016
 License     : BSD3
-Maintainer  : benedict.gaster@email.com
+Maintainer  : benedict.gaster@gmail.com
 Stability   : experimental
 Portability : Not sure!
 
-Here is a longer description of this module, containing some
-commentary with @some markup@.
+
 -}
 module Protocol.Packet (
   ControlID,
@@ -22,6 +21,8 @@ module Protocol.Packet (
   packet
   ) where
 
+-- standard Haskell libraries
+
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Identity
@@ -31,26 +32,35 @@ import qualified Data.ByteString as B
 import Data.Binary.Strict.Get
 import Data.Word
 
-import Protocol.Message
+-- now our own modules
 
+import Protocol.Message
 import AppState
 
 -----------------------------------------------------------------------------
 -- Datatypes for control and module packets
 -----------------------------------------------------------------------------
 
+-- | Type 'ControlPacket' represents a control packet in the Arduino to host
+--   protocol
 data ControlPacket =
   ControlPacket
   {
+    -- | Controller ID
     controlId    :: ControlID,
+    -- | MIDI control value for control command
     controlValue :: ControlValue
   }
   deriving (Show, Eq)
 
+-- | Type 'ModuleControlPacket' represents a module control packet in the
+--   Arduino to host protocol
 data ModuleControllerPacket =
   ModuleControllerPacket
   {
+    -- | Module ID
     moduleID       :: ModuleID,
+    -- | Sequence of controller packets received from Arduino
     controlPackets :: [ControlPacket]
   }
   deriving (Show, Eq)  
