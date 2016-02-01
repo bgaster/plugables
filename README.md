@@ -1,4 +1,4 @@
-Reaktor Block Controller Toolkit
+Modular Control Surface Toolkit
 --------------------------------
 
-This is my Reaktor Block Controller Toolkit
+This is the software for my modular control surface toolkit
