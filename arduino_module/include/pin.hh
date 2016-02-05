@@ -55,7 +55,7 @@ enum PIN {
     D11 = 11,
     D12 = 12,
     D13 = 13,
-    D14 = 14,
+    D14 = 14, // ??
 
     // FIXME: if we ever have a large number of pins :-)
     PIN_UNDEFINED = 127
@@ -110,7 +110,7 @@ struct modify_policy_analog_read
     }
     
     uint16_t read(void)
-    {
+    {	
 	// perform analog read
 	return analogRead(Id);
     }    

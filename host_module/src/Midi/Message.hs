@@ -110,7 +110,7 @@ import AppState
 type Parse a = CharParser () a
 
 whitespace :: Parse ()
-whitespace = (spaces >>= \_ -> pure ()) <|> (newline >>= \_ -> pure ())
+whitespace = (spaces >>= \_ -> pure ()) <|> (newline >>= \_ -> pure ()) <|> pure ()
 
 parseList :: Parse a -> Parse [a]
 parseList p = do
@@ -166,12 +166,13 @@ connectDevice filename = do
 
   -- now load tables
   handle   <- liftIO $ openFile filename ReadMode
+  liftIO $ hSetEncoding handle utf8
   contents <- liftIO $ hGetContents handle
 
   foldr (\(mtab, ctab) _ ->
              putTables (V.fromList mtab, V.fromList ctab) >>= \_ -> pure True)
-        (pure False)
-        (runParser (wrap parseTables) () "" contents) 
+        (liftIO $ print "error" >> pure False)
+        (runParser (wrap parseTables) () "" (contents))
 
   where
     wrap :: Parse a -> Parse a
@@ -188,13 +189,15 @@ connectDevice filename = do
 
 -- | function 'controlPacketToMidi' converts control packets to MIDI control
 --   command messages
+-- NOTE: the -1, this is because controlIds are in the interval [1, NC+1),
+--       where NC the total number of controllers for a module
 controlPacketToMidi :: MidiChannel ->
                        ControllerTable ->
                        ControllerOffset ->
                        ControlPacket ->
                        AppM MidiMessage
 controlPacketToMidi channel ctab offset cp =
-  pure $ MidiMessage channel $ CC (ctab V.! (offset + fromIntegral (controlId cp)))
+  pure $ MidiMessage channel $ CC (ctab V.! (offset + fromIntegral (controlId cp - 1)))
                            (fromIntegral $ controlValue cp)
 
 --------------------------------------------------------------------------------

@@ -182,14 +182,17 @@ function ListInstrumentsCtrl($scope, ModuleService, $location, Restangular) {
     /**
      * @function $scope.createArduinoModuleCode
      * @description 
+     * FIXME: we need to do this for an instrument not just a module!!
      */
     $scope.createArduinoModuleCode = function(moduleId) {
+	
 	Restangular.one("modules", moduleId).get().then(function(mod) {
+
+	    var arduino = new ArduinoCode(0, mod.name);
 	    
 	    Restangular.all("moduleControllers").getList().then(function(cons) {
-		var code = filePrefix;
 
-		code += fileStartModule(moduleId);
+		//code += fileStartModule(moduleId);
 		
 		var controllers = cons.plain().filter(function(control) {
 		    return control.moduleId == moduleId;
@@ -199,36 +202,68 @@ function ListInstrumentsCtrl($scope, ModuleService, $location, Restangular) {
 
 		controllers.forEach(function(control) {
 
-		    code += fileController(
+		    arduino.pushController(
 			control.id,
 			control.type,
 			control.pin1,
 			control.pin2,
-			control.pin3);
-		    
-		    if (left > 1) {
-			code += ",\n";
-			left--;
-		    }
+			control.pin3);		    
 		});
 
-		code += fileEndModule(mod.name) + "\n\n";
-		
-		code += filePostfix(mod.name);
-		
-		
 		var blob =
 		    new Blob(
-			[code],
+			[arduino.close()],
 			{type: "text/plain;charset=utf-8"});
 		
-		saveAs(blob, createFileName(mod.name, moduleId));
+		saveAs(blob, arduino.createFileName());
 		
 	    });
 
 	    $location.path('/');
 	});
     }
+
+   /**
+     * @function $scope.createLookupTables
+     * @description 
+     * FIXME: we need to do this for an instrument not just a module!!
+     */
+    $scope.createLookupTables = function(moduleId, channel) {
+
+	var lookupTables = new LookupTables(channel);
+	
+	Restangular.one("modules", moduleId).get().then(function(mod) {
+
+	    lookupTables.pushModule();
+	    
+	    Restangular.all("moduleControllers").getList().then(function(cons) {
+		
+		var controllers = cons.plain().filter(function(control) {
+		    return control.moduleId == moduleId;
+		});
+
+		controllers.forEach(function(control) {
+		    lookupTables.pushControllers(
+		     	control.controlCommand1,
+		     	control.controlCommand2,
+		     	control.controlCommand3);
+		});
+
+		var tables = lookupTables.closedTables();
+
+		// we save as ASCII, no unicode encoding, simply as it
+		// is not needed
+		var blob = new Blob(
+		    [tables],
+		    {type: "text/plain;"});
+
+		saveAs(blob, "lookupTable.txt");
+		
+	    });
+
+	    $location.path('/');
+	});
+    }    
 }
 
 /**
@@ -266,7 +301,7 @@ function EditInstrumentModuleCtrl(
 	});
     };
 
-    // sav updated module to database and route to /
+    // save updated module to database and route to /
     $scope.save = function() {
 	$scope.module.put().then(function() {
 	    $location.path('/');

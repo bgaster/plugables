@@ -27,6 +27,7 @@
 	    src="bower_components/restangular/dist/restangular.js"></script>
     <script src="scripts/FileSaver.min.js"></script>
     <script src="scripts/arduinoCode.js"></script>
+    <script src="scripts/lookupTables.js"></script>
     <script src="scripts/instruments.js"></script>
   </head>
 
@@ -107,9 +108,9 @@
 		    </uib-accordion-heading>
 		    
 		    <div class="pure-g">
-		      <div class="pure-u-1-4"><p><b>Module</b></p></div>
-		      <div class="pure-u-1-4"><p><b>Channel</b></p></div>
-		      <div class="pure-u-1-4">
+		      <div class="pure-u-1-5"><p><b>Module</b></p></div>
+		      <div class="pure-u-1-5"><p><b>Channel</b></p></div>
+		      <div class="pure-u-1-5">
 			<p>
 			  <a href="#/new/{{instrument.id}}" title="Add Module">
 			    <span style="font-size:1.2em;"
@@ -117,25 +118,28 @@
 			  </a>
 			</p>
 		      </div>
-		      <div class="pure-u-1-4">
+		      <div class="pure-u-1-5">
 			<p><b>Arduino Code</b></p>
+		      </div>
+		      <div class="pure-u-1-5">
+			<p><b>Lookup Tables</b></p>
 		      </div>
 		    </div>
 
 		    <div ng-repeat="instrumentModule in instrumentModules">
 		      <div ng-if="instrument.id == instrumentModule.instrumentId"
 			   class="pure-g">
-		      <div class="pure-u-1-4" l-box>
+		      <div class="pure-u-1-5" l-box>
 			<p>
 			  {{getModuleName(instrumentModule.moduleId, modules)}}
 			</p>
 		      </div>
-		      <div class="pure-u-1-4" l-box>
+		      <div class="pure-u-1-5" l-box>
 			<p>
 			  {{instrumentModule.channel}}
 			</p>
 		      </div>
-		      <div class="pure-u-1-4">
+		      <div class="pure-u-1-5">
 			<p>
 		          <a href="#/edit/{{instrumentModule.id}}"
 			     title="Edit Instrument Module">
@@ -144,11 +148,22 @@
 			  </a>
 			</p>
 		      </div>
-		      <div class="pure-u-1-4">
+		      <div class="pure-u-1-5">
 			<p>
 			  <a href="#"
 			     ng-click="createArduinoModuleCode(instrumentModule.moduleId)"
 			     title="Create Module Arduino Code">
+			    <span style="font-size:1.2em;"
+				  class="glyphicon glyphicon-save-file"></span>
+			  </a>
+			</p>
+		      </div>
+		      <div class="pure-u-1-5">
+			<p>
+			  <a href="#"
+			     ng-click="createLookupTables(instrumentModule.moduleId, 
+                                                          instrumentModule.channel)"
+			     title="Create Lookup Tables">
 			    <span style="font-size:1.2em;"
 				  class="glyphicon glyphicon-save-file"></span>
 			  </a>

@@ -3,7 +3,7 @@
 ARDUINO_LIBS = 
 USR_INCLUDE = ./include
 
-# --- mega2560 ide 1.6
+#BOARD_TAG    = uno
 BOARD_TAG    = nano
 BOARD_SUB    = atmega328
 MONITOR_PORT = /dev/cu.wchusbserial1410

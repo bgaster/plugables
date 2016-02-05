@@ -148,6 +148,9 @@ class controller {
  * @template class specialization for controller
  *
  * @description linearPot controller
+ *
+ * We provide abasic 'smoothing' average to avoid sending
+ * 'tiny' variants in the anolog signal.
  */
 template <
     controller_id Id,
@@ -161,8 +164,12 @@ class controller <
                          Pin>
 {
 private:
-    // FIXME: this requies space, but allows us to only send changes
-    int old_value_;
+    static constexpr uint8_t num_readings_{10};
+    
+    uint16_t readings_[num_readings_];
+    uint16_t old_average_;
+    uint16_t total_;
+    uint8_t index_;
     
 public:
     typedef detail::controller_policy<
@@ -176,18 +183,12 @@ public:
      * 
      */
     constexpr controller() :
-    old_value_(0) 
+	readings_{0,0,0,0,0,0,0,0,0,0},
+	old_average_(0),
+	total_(0),
+	index_(0)
     {
     }
-
-    /**
-     * @constructor controller
-     * @description
-     */
-    // controller() :
-    // 	old_value(0)
-    // {
-    // }
     
     /**
      * @method setup
@@ -208,16 +209,23 @@ public:
      * avoid using magic numbers
      */
     control_packet run()
-    {
+    {	
+	total_ -= readings_[index_];
+	
 	// remap the value to MINI limits,
 	// perform the remapping now to limit variation
-	uint16_t value =
+	readings_[index_] =
 	    utils::remap<0, 1024, 0, 128>(controller_policy_::get_pin().read());
-	
-	if (old_value_ != value) {
-	    old_value_ = value;
 
-	    return make_control_packet<Id>(value);
+	total_ += readings_[index_];
+
+	index_ = (index_+ 1) % utils::arraysize(readings_);
+	
+	uint16_t average = total_ / utils::arraysize(readings_);
+	
+	if (old_average_ != average) {
+	    old_average_ = average;
+	    return make_control_packet<Id>(average);
 	}
 
 	return invalid_control_packet();
