@@ -63,9 +63,15 @@
 
 	  <div class="pure-menu pure-menu-horizontal" align=center>
 	    <ul class="pure-menu-list">
-	      <li class="pure-menu-item"><a href="./index.html" class="pure-menu-link">Home</a></li>
-	      <li class="pure-menu-item"><a href="./instruments.html" class="pure-menu-link">Instruments</a></li>
-	      <li class="pure-menu-item"><a href="./modules.html" class="pure-menu-link">Modules</a></li>
+	      <li class="pure-menu-item">
+		<a href="./index.html" class="pure-menu-link">Home</a>
+	      </li>
+	      <li class="pure-menu-item">
+		<a href="./instruments.html" class="pure-menu-link">Instruments</a>
+	      </li>
+	      <li class="pure-menu-item">
+		<a href="./modules.html" class="pure-menu-link">Modules</a>
+	      </li>
 	    </ul>
 	  </div>
 
@@ -88,10 +94,11 @@
 	      <div ng-repeat="module in modules">
 		<uib-accordion close-others="oneAtATime">
 		  <uib-accordion-group heading="module.name"
-				       is-open="status.isFirstOpen" is-disabled="status.isFirstDisabled">
+				       is-open="status.isFirstOpen"
+				       is-disabled="status.isFirstDisabled">
 		    <uib-accordion-heading>
 		      {{module.name}}
-		      <a href="#"  ng-click="deleteModule(module.id)"
+		      <a href="#"  ng-click="deleteModule(module._id)"
 			 title="Module Instrument">
 			(<span class="glyphicon glyphicon-minus"></span>)
 		      </a>
@@ -104,7 +111,7 @@
 		      <div class="pure-u-1-5"><p><b>Control Cmd 1/2/3</b></p></div>
 		      <div class="pure-u-1-5">
 			<p>
-			  <a href="#/new/{{module.id}}" title="Add Contoller">
+			  <a href="#/new/{{module._id}}" title="Add Contoller">
 			    <span class="glyphicon glyphicon-plus"></span>
 			  </a>
 			</p>
@@ -112,7 +119,7 @@
 		    </div>
 
 		    <div ng-repeat="moduleController in moduleControllers">
-		      <div ng-if="module.id == moduleController.moduleId"
+		      <div ng-if="module._id == moduleController.module_id"
 			   class="pure-g">
 		      <div class="pure-u-1-5" l-box>
 			<p>
@@ -121,7 +128,7 @@
 		      </div>
 		      <div class="pure-u-1-5" l-box>
 			<p>
-			  {{moduleController.type}}
+			  {{lookupName(types,moduleController.type_id)}}
 			</p>
 		      </div>
 		      
@@ -165,7 +172,7 @@
 
 		      <div class="pure-u-1-5">
 			<p>
-		          <a href="#/edit/{{moduleController.id}}"
+		          <a href="#/edit/{{moduleController._id}}"
 			     title="Edit Module Controller">
 			    <span class="glyphicon glyphicon-edit"></span>
 			  </a>
@@ -179,7 +186,10 @@
 
 	    <script type="text/ng-template" id="editmodulecontroller.html">
 	      <div class="page-header">
-		<h1>Edit Controller <font color="#E6E6E6">{{controller.name}}</font> for module <font color="#E6E6E6">{{moduleName}}</font></h1>
+		<h1>Edit Controller
+		  <font color="#E6E6E6">{{controller.name}}</font> for module
+		  <font color="#E6E6E6">{{moduleName}}</font>
+		</h1>
 	      </div>
 
 	      <div class="pure-g">
@@ -207,12 +217,12 @@
 		       <button id="btn-append-to-single-button" type="button"
 			       id="moduleSelectButton"
 			       class="pure-button" uib-dropdown-toggle>
-			 {{controller.type}} <span class="caret"></span>
+			 {{typename}} <span class="caret"></span>
 		       </button>
 		    <ul class="dropdown-menu" uib-dropdown-menu
 			role="menu" aria-labelledby="btn-append-to-single-button">
 		      <li ng-repeat="type in types">
-			<a ng-click="setType(type.type)">{{type.type}}</a>
+			<a ng-click="setType(type.type, type.type_id)">{{type.type}}</a>
 		      </li>
 		    </ul>
 		     </div>
@@ -227,7 +237,7 @@
 		       </button>
 		       <ul class="dropdown-menu" uib-dropdown-menu
 			   role="menu" aria-labelledby="btn-append-to-single-button">
-			 <li ng-repeat="pin in pins">
+			 <li ng-repeat="pin in pins track by $index">
 			   <a ng-click="setPin1(pin.pin)">{{pin.pin}}</a>
 			 </li>
 		       </ul>
@@ -293,7 +303,7 @@
 		 <a href="#/" class="pure-button">Cancel</a>
 		 <button ng-click="save()" class="pure-button">Save</button>
 		 <button ng-click="destroy()"
-			 ng-show="controller.id" class="pure-button">Delete</button>
+			 ng-show="controller._id" class="pure-button">Delete</button>
 		 
 	      </form>
 	    </script>
@@ -341,12 +351,12 @@
 		       <button id="btn-append-to-single-button" type="button"
 			       id="moduleSelectButton"
 			       class="pure-button" uib-dropdown-toggle>
-			 {{controller.type}} <span class="caret"></span>
+			 {{typename}} <span class="caret"></span>
 		       </button>
 		       <ul class="dropdown-menu" uib-dropdown-menu
 			   role="menu" aria-labelledby="btn-append-to-single-button">
 			 <li ng-repeat="type in types">
-			   <a ng-click="setType(type.type)">{{type.type}}</a>
+			   <a ng-click="setType(type.type, type.type_id)">{{type.type}}</a>
 			 </li>
 		       </ul>
 		     </div>

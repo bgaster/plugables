@@ -1,0 +1,26 @@
+{
+   "name": "mcontrollers",
+   "version": "0.0.1",
+   "description": "Modular controller framework",
+   "author": "Bendict R. Gaster",
+   "license": "MIT",
+   "scripts": {
+    "start": "node app.js",
+    "prepublish": "tsc --out app.js app.ts"
+   },
+   "main": "app.js",
+   "keywords": [
+    "modular",
+    "controllers",
+    "framework",
+    "blocks",
+    "arduino"
+   ],
+   "dependencies": {
+    "express": "~4.13.4",
+    "mongodb": "~2.0",
+    "bson": "~0.4.20",
+    "typescript": "~1.7.5"
+   }
+}
+

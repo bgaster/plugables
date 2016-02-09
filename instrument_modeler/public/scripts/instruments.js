@@ -25,7 +25,7 @@ app.factory('ModuleService', function () {
         return {
             lookupModule: function(moduleId, modules) {
 		for (i = 0; i < modules.length; i++) {
-		    if (modules[i].id == moduleId) {
+		    if (modules[i]._id == moduleId) {
 			return modules[i].name;
 		    }
 		}
@@ -56,13 +56,13 @@ app.config(function($routeProvider, RestangularProvider) {
         controller:ListInstrumentsCtrl,
         templateUrl:'list.html'
       }).
-      when('/edit/:moduleName', {
+      when('/edit/:uniqueModuleId', {
         controller:EditInstrumentModuleCtrl,
         templateUrl:'editinstrumentmodule.html',
         resolve: {
-          module: function(Restangular, $route) {
-            var id = $route.current.params.moduleName;
-            return Restangular.one('instrumentModules', id).get();
+          instModule: function(Restangular, $route) {
+              var id = $route.current.params.uniqueModuleId;
+              return Restangular.one('instrumentModule', id).get();
           }
         }
       }).
@@ -87,7 +87,8 @@ app.config(function($routeProvider, RestangularProvider) {
       otherwise({redirectTo:'/'});
 
       // our Restful JSON db server is running here...
-      RestangularProvider.setBaseUrl('http://localhost:3000/');
+    RestangularProvider.setBaseUrl('http://localhost:3000/');
+    RestangularProvider.setDefaultHeaders({'Content-Type': 'application/json'});
   });
 
 /**
@@ -107,7 +108,7 @@ function CreateInstrumentModuleCtrl(
     });
 
     // initialize a "default" module, using specified instrument ID
-    $scope.instrumentModule = { channel: 1, moduleId: 0, instrumentId : instId };
+    $scope.instrumentModule = { channel: 1, moduleId: "", instrumentId : instId };
 
     // store the name of the selected module in button assocated with dropdown
     // initially no module selected and so simply call it "Module"
@@ -126,7 +127,7 @@ function CreateInstrumentModuleCtrl(
 
     // save module to teh database and route to /
     $scope.save = function() {
-	Restangular.all('instrumentModules')
+	Restangular.all('instrumentAddModule')
 	    .post($scope.instrumentModule)
 	    .then(function(instrumentModule) {
 		$location.path('/list');
@@ -167,7 +168,7 @@ function ListInstrumentsCtrl($scope, ModuleService, $location, Restangular) {
     $scope.instruments       = Restangular.all("instruments").getList().$object;
 
     // list of all instrument modules
-    $scope.instrumentModules = Restangular.all("instrumentModules").getList().$object;
+    //$scope.instrumentModules = Restangular.all("instrumentModules").getList().$object;
 
     // list of all modules
     $scope.modules           = Restangular.all("modules").getList().$object;
@@ -185,41 +186,46 @@ function ListInstrumentsCtrl($scope, ModuleService, $location, Restangular) {
      * FIXME: we need to do this for an instrument not just a module!!
      */
     $scope.createArduinoModuleCode = function(moduleId) {
-	
+
+	// query the module
 	Restangular.one("modules", moduleId).get().then(function(mod) {
 
-	    var arduino = new ArduinoCode(0, mod.name);
-	    
-	    Restangular.all("moduleControllers").getList().then(function(cons) {
+	    // query controller types
+	    Restangular.all("controllerTypes").getList().then(function(types) {
 
-		//code += fileStartModule(moduleId);
+		var arduino = new ArduinoCode(0, mod.name, types.plain());
 		
-		var controllers = cons.plain().filter(function(control) {
-		    return control.moduleId == moduleId;
+		// query module controllers
+		// FIXME: we should really just get the BE return
+		//        controllers for module
+		Restangular.one("moduleControllers").getList().then(function(cons) {
+
+		    // filter only controllers associated with module
+		    var controllers = cons.plain().filter(function(control) {
+			return control.module_id == moduleId;
+		    });
+		    
+		    var left = controllers.length;
+		    
+		    controllers.forEach(function(control) {
+			
+			arduino.pushController(
+			    control.type_id,
+			    control.pin1,
+			    control.pin2,
+			    control.pin3);		    
+		    });
+		    
+		    var blob =
+			new Blob(
+			    [arduino.close()],
+			    {type: "text/plain;charset=utf-8"});
+		    
+		    saveAs(blob, arduino.createFileName());
+		    
+		    $location.path('/');
 		});
-
-		var left = controllers.length;
-
-		controllers.forEach(function(control) {
-
-		    arduino.pushController(
-			control.id,
-			control.type,
-			control.pin1,
-			control.pin2,
-			control.pin3);		    
-		});
-
-		var blob =
-		    new Blob(
-			[arduino.close()],
-			{type: "text/plain;charset=utf-8"});
-		
-		saveAs(blob, arduino.createFileName());
-		
 	    });
-
-	    $location.path('/');
 	});
     }
 
@@ -239,7 +245,7 @@ function ListInstrumentsCtrl($scope, ModuleService, $location, Restangular) {
 	    Restangular.all("moduleControllers").getList().then(function(cons) {
 		
 		var controllers = cons.plain().filter(function(control) {
-		    return control.moduleId == moduleId;
+		    return control.module_id == moduleId;
 		});
 
 		controllers.forEach(function(control) {
@@ -258,10 +264,9 @@ function ListInstrumentsCtrl($scope, ModuleService, $location, Restangular) {
 		    {type: "text/plain;"});
 
 		saveAs(blob, "lookupTable.txt");
-		
-	    });
 
-	    $location.path('/');
+		$location.path('/');
+	    });
 	});
     }    
 }
@@ -276,21 +281,24 @@ function EditInstrumentModuleCtrl(
     ModuleService,
     $location,
     Restangular,
-    module) {
+    instModule) {
 
     // save a copy of the incoming module, needed for cancel case
-    var original = module;
+    var original = instModule;
 
     // setup copy of the original to be updated, needed for save case
-    $scope.module = Restangular.copy(original);
+    $scope.instModule = Restangular.copy(original);
 
     // get instrument name for display in page
-    Restangular.one("instruments", original.instrumentId).get().then(function(inst) {
-	$scope.instrumentName = inst.name;
-    });
+    // Restangular.one("instruments", original.instrumentId).get().then(function(inst) {
+    // 	$scope.instrumentName = inst.name;
+    // });
 
     // get module name for display in page
-    Restangular.one("modules", original.moduleId).get().then(function(mod) {
+    Restangular.one(
+	"modules",
+	original.modules[0].module_id).get().then(function(mod) {
+	    
 	$scope.moduleName = mod.name;
     });
 
@@ -303,7 +311,7 @@ function EditInstrumentModuleCtrl(
 
     // save updated module to database and route to /
     $scope.save = function() {
-	$scope.module.put().then(function() {
+	$scope.instModule.put().then(function() {
 	    $location.path('/');
 	});
     };

@@ -19,9 +19,10 @@
  * the generated code utilizes. This means that the actual code
  * generator is trivial.
  *
+ * FIXME: Port to Typescript and uses "real" classes
  */
 
-function ArduinoCode(moduleId, moduleName) {
+function ArduinoCode(moduleId, moduleName, controllerTypes) {
 
     // constant stuff
     this.baud = "9600"
@@ -62,6 +63,8 @@ function ArduinoCode(moduleId, moduleName) {
 
     this.moduleName = moduleName
     this.moduleId   = moduleId
+    // array of controller types, read from DB
+    this.controllerTypes = controllerTypes
 
     this.controllerId = 1;
     
@@ -78,6 +81,22 @@ function ArduinoCode(moduleId, moduleName) {
 	+ `${this.namespace}::module<\n`
         + `    ${this.baud}, \n`
     	+ `    ${this.moduleId}, \n`
+}
+
+/**
+ * @function lookupControllerTypeName
+ * @description lookup the name of a controller type, given a 
+ * corresponding Mongdb _id
+ */
+ArduinoCode.prototype.lookupControllerTypeName = function(id) {
+    for (var i = 0; i < this.controllerTypes.length; i++) {
+	if (this.controllerTypes[i]._id == id) {
+	    return this.controllerTypes[i].name
+	}
+    }
+
+    // should never get here, as we maintain the DB invariant!
+    return "unknown controller type"
 }
 
 /**
@@ -159,8 +178,8 @@ ArduinoCode.prototype.convertJSONControllerTypePinsToArduinoTypePins = function 
     type, pin1, pin2, pin3) {
 
     var str = "";
-    
-    switch(type) {
+
+    switch(this.lookupControllerTypeName(type)) {
     case "linearPot":
 	str = this.namespace + "::controller_type::LINEAR_POT,\n        "
 	    + this.convertJSONControllerPinToArduinoPin(pin1) + this.ro;
@@ -189,7 +208,12 @@ ArduinoCode.prototype.convertJSONControllerTypePinsToArduinoTypePins = function 
     return str;
 }
 
-ArduinoCode.prototype.pushController = function (id, type, pin1, pin2, pin3) {
+/**
+ * @function pushController
+ * @description
+ *
+ */
+ArduinoCode.prototype.pushController = function (type, pin1, pin2, pin3) {
     if (this.controllerId != 1) {
 	this.code += ",\n"
     }

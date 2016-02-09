@@ -66,7 +66,8 @@ app.config(function($routeProvider, RestangularProvider) {
       }).	
       otherwise({redirectTo:'/'});
       
-      RestangularProvider.setBaseUrl('http://localhost:3000/');
+    RestangularProvider.setBaseUrl('http://localhost:3000/');
+    RestangularProvider.setDefaultHeaders({'Content-Type': 'application/json'});
   });
 
 /**
@@ -84,26 +85,37 @@ function CreateModuleControllerCtrl(
 	$scope.moduleName = module.name;
     });
 
+    $scope.typename = "notdefined";
     // initialize a "default" contoller, using specified module ID
     $scope.controller = {   "name": "notdefined",
-			    "type": "linearPot",
+			    "type_id": "notdefined",
 			    "pin1": "N/A",
 			    "pin2": "N/A",
 			    "pin3": "N/A",
 			    "controlCommand1": -1,
 			    "controlCommand2": -1,
 			    "controlCommand3": -1,
-			    "moduleId": moduleId
+			    "module_id": moduleId
 			};
     
-
     // controller types and pins
-    $scope.types = Restangular.all("controllerTypes").getList().$object;
-    $scope.pins = Restangular.all("pins").getList().$object;
+    $scope.types = Restangular.all("controllerTypes").getList().then(function(types) {
+	var ts = [];
+	for (var i = 0; i < types.length; i++) {
+	    ts[i] = { type: types[i].name, type_id: types[i]._id };
+	}
+    	$scope.types = ts;
+    });
+    //$scope.pins = Restangular.all("board").getList().$object;
+
+    Restangular.one("board").get().then(function(board) {
+    	$scope.pins = board.analog_pins.concat(board.digital_pins);
+    });
 
     // set the controller type
-    $scope.setType = function(type) {
-	$scope.controller.type = type;
+    $scope.setType = function(type, type_id) {
+	$scope.typename = type;
+	$scope.controller.type_id = type_id;
     }
 
     // set the controller's pin1
@@ -123,11 +135,19 @@ function CreateModuleControllerCtrl(
 
     // save the controller to the database and route to /
     $scope.save = function() {
-	Restangular.all('moduleControllers')
-	    .post($scope.controller)
-	    .then(function(controller) {
-		$location.path('/list');
-	    });
+	if ($scope.typename != "notdefined" &&
+	    $scope.controller.type_id != "notdefined" &&
+	    $scope.controller.pin1 != "N/A" &&
+	   $scope.controller.controlCommand1 != "N/A") {
+	    Restangular.all('moduleControllers')
+		.post($scope.controller)
+		.then(function(controller) {
+		    $location.path('/list');
+		});
+	}
+	else {
+	    $location.path('/list');
+	}
     }
 }
 
@@ -156,7 +176,16 @@ function CreateModuleCtrl($scope, $location, Restangular) {
 function ListModulesCtrl($scope, $location, Restangular) {
     $scope.modules = Restangular.all("modules").getList().$object;
     $scope.moduleControllers = Restangular.all("moduleControllers").getList().$object;
+    $scope.types = Restangular.all("controllerTypes").getList().$object;
 
+    $scope.lookupName = function (types, id) {
+	for (var i = 0; i < types.length; i++) {
+	    if (types[i]._id == id) {
+		return types[i].name;
+	    }
+	}
+    }
+    
     $scope.deleteModule = function(moduleId) {
 	Restangular.one("modules", moduleId).remove().then(function() {
 	    $location.path('/list');
@@ -176,23 +205,43 @@ function EditModuleControllerCtrl(
     control) {
 
     // read controller types and pins to populate form of corresponding types
-    $scope.types = Restangular.all("controllerTypes").getList().$object;
-    $scope.pins = Restangular.all("pins").getList().$object;
+//    $scope.types = Restangular.all("controllerTypes").getList().$object;
 
+    // controller types and pins
+    // FIXME: I'm missing something with angular and why we need to copy the array!
+    $scope.types = Restangular.all("controllerTypes").getList().then(function(types) {
+	var ts = [];
+	for (var i = 0; i < types.length; i++) {
+	    if (types[i]._id == control.type_id) {
+		$scope.typename = types[i].name;
+	    }
+	    ts[i] = { type: types[i].name, type_id: types[i]._id };
+	}
+    	$scope.types = ts;
+    });
+
+    // FIXME: add board selection on module edit field
+    // at the moment we are only working with a single board so does not
+    // matter :-)
+    Restangular.one("board").get().then(function(board) {
+    	$scope.pins = board.analog_pins.concat(board.digital_pins);
+    });
+    
     // save a copy of the incoming module, needed for cancel case
     var original = control;
 
     // setup up a copy of the original to be updated, need for save case
     $scope.controller = Restangular.copy(original);
-
+    
     // get module name for display in page
-    Restangular.one("modules", original.moduleId).get().then(function(module) {
+    Restangular.one("modules", original.module_id).get().then(function(module) {
 	$scope.moduleName = module.name;
     });
 
     // set controller type
-    $scope.setType = function(type) {
-	$scope.controller.type = type;
+    $scope.setType = function(type, type_id) {
+	$scope.typename = type;
+	$scope.controller.type_id = type_id;
     }
 
     // set controller pin 1
