@@ -18,7 +18,7 @@
  *
  *
  * Note: 0 is not a valid Controller ID. This is checked and a compile
- *       time error is report if the invariant is invalid.
+ *       time error is reported if the invariant is invalid.
  *
  */
 #pragma once
@@ -27,6 +27,7 @@
 
 #include <autility.hh>
 #include <pin.hh>
+#include <button.hh>
 #include <protocol.hh>
 
 #if defined(__DEBUG__)
@@ -41,6 +42,11 @@ namespace blocks {
 // we support up to 256 different types of controllers, but
 // currently provide nowhere near this number
 typedef uint8_t controller_id;
+
+inline constexpr controller_id controller_inc(controller_id id)
+{
+    return id + 1;
+}
 
 /*
  * @enum class controller_type
@@ -133,6 +139,7 @@ template<
     typename Pin1,
     typename Pin2 = pin<PIN_UNDEFINED, modify_policy_undefined>(),
     typename Pin3 = pin<PIN_UNDEFINED, modify_policy_undefined>(),
+    typename Pin4 = pin<PIN_UNDEFINED, modify_policy_undefined>(),
     // some "fake" arguments to make sure this
     // only fires when there is no valid instance
     int X = 0, size_t T = sizeof(char)> 
@@ -149,7 +156,7 @@ class controller {
  *
  * @description linearPot controller
  *
- * We provide abasic 'smoothing' average to avoid sending
+ * We provide a basic 'smoothing' average to avoid sending
  * 'tiny' variants in the anolog signal.
  */
 template <
@@ -208,7 +215,8 @@ public:
      * FIXME: add constexprs to get pot range, midi range, and so on, i.e.
      * avoid using magic numbers
      */
-    control_packet run()
+    template<typename F>
+    void run(F pusher)
     {	
 	total_ -= readings_[index_];
 	
@@ -225,10 +233,8 @@ public:
 	
 	if (old_average_ != average) {
 	    old_average_ = average;
-	    return make_control_packet<Id>(average);
+	    pusher(make_control_packet<Id>(average));
 	}
-
-	return invalid_control_packet();
     }
 };
 
@@ -236,6 +242,9 @@ public:
  * @template class specialization for controller
  *
  * @description linearSlider controller
+ * 
+ * We provide abasic 'smoothing' average to avoid sending
+ * 'tiny' variants in the anolog signal.
  */
 template <
     controller_id Id,
@@ -249,6 +258,11 @@ class controller <
                          Pin>
 {
 private:
+    static constexpr uint8_t num_readings_{10};
+    uint16_t readings_[num_readings_];
+    uint16_t old_average_;
+    uint16_t total_;
+    uint8_t index_;
 public:
     typedef detail::controller_policy<
                          Id,
@@ -261,7 +275,11 @@ public:
      * @description default constructor for linearSlider controller
      * 
      */    
-    constexpr controller() 
+    constexpr controller() :
+	readings_{0,0,0,0,0,0,0,0,0,0},
+	old_average_(0),
+	total_(0),
+	index_(0)
     {
     }
 
@@ -272,6 +290,36 @@ public:
      */
     constexpr void setup() const {
 	controller_policy_::get_pin().setup();
+    }
+
+    /**
+     * @method run
+     * @description
+     * @returns a valid control packet (non-zero), or 0
+     *
+     * FIXME: add constexprs to get slider range, midi range, and so on, i.e.
+     * avoid using magic numbers
+     */
+    template<typename F>
+    void run(F pusher)
+    {	
+	total_ -= readings_[index_];
+	
+	// remap the value to MINI limits,
+	// perform the remapping now to limit variation
+	readings_[index_] =
+	    utils::remap<0, 1024, 0, 128>(controller_policy_::get_pin().read());
+
+	total_ += readings_[index_];
+
+	index_ = (index_+ 1) % utils::arraysize(readings_);
+	
+	uint16_t average = total_ / utils::arraysize(readings_);
+	
+	if (old_average_ != average) {
+	    old_average_ = average;
+	    pusher( make_control_packet<Id>(average) );
+	}
     }
 };
 
@@ -327,23 +375,49 @@ public:
  * @template class specialization for controller
  *
  * @description togglePair controller
+ *
+ * Currently, this is very specific to Reaktor block's mod A & B
+ * controls within a given block. The behaviour is as follows:
+ *
+ *  A led off
+ *  B lef off
+ *
+ *  Repeat
+ *    if A pressed, then
+ *         send control on (127), if a led off, set a led on and b led off
+ *         send control off (0), if a led on, set a led off
+ *    if B pressed, then
+ *         send control on (127), if b led off, set b led on and a led off
+ *         send control off (0), if b led on, set b led off
+ *
+ *   Note that while the opposite led is switched of if on, when other pressed,
+ *   no control off message is sent, as Reaktor does not require it.
+ *
+ * Additionally, using this controller needs to be slightly careful as it
+ * assumes that the send Id (for button A), used as unique control data indentifier, 
+ * is followed in sequence by an Id (for button B), but it is left implicit, thus
+ * must be caefully allocated by the caller, even though not passed as an argument. 
+ * 
+ * FIXME: maybe rename to account for Reaktor behaviour?
  */
 template <
-    controller_id Id,
-    typename Pin1,
-    typename Pin2,
-    typename Pin3>
+    controller_id Id, // IdA = Id, IdB = controller_inc(Id)
+    typename Pin1,    // button A
+    typename Pin2,    // LED A
+    typename Pin3,    // button B
+    typename Pin4>    // LED B
 class controller <
     Id,
     controller_type::TOGGLE_PAIR,
     Pin1,
     Pin2,
-    Pin3> : public  detail::controller_policy<
+    Pin3,
+    Pin4> : public  detail::controller_policy<
                          Id,
                          controller_type::TOGGLE_PAIR,
                          Pin1>
 {
-private:	    
+private:
     typedef detail::controller_policy<
                          Id,
                          controller_type::TOGGLE_PAIR,
@@ -354,9 +428,27 @@ private:
     // have unique IDs, which are passed as template parameter
     static constexpr Pin2 pin2_ {};
     static constexpr Pin3 pin3_ {};
+    static constexpr Pin4 pin4_ {};
+
+    // led's states
+    uint16_t led_a_state_;
+    uint16_t led_b_state_;
+
+    // buttons
+    button<Pin1> buttonA_;
+    button<Pin3> buttonB_;
     
 public:
-    constexpr controller() 
+    /**
+     * @constructor controller
+     * @description
+     *  Default constructor for toggle pair controller
+     */
+    constexpr controller() :
+	led_a_state_{HIGH},
+	led_b_state_{HIGH},
+	buttonA_{controller_policy_::get_pin()},
+	buttonB_{pin3_}
     {
     }    
     
@@ -364,14 +456,63 @@ public:
      * @method setup
      *
      * @description
+     *  Setup method for controller, called just once before controller can be used
      */
     constexpr void setup() const
     {
-	controller_policy_::get_pin().setup();
+	// setup button A & LED A
+	buttonA_.setup();
 	pin2_.setup();
-	pin3_.setup();
+
+	
+	// setup button B & LED B
+	buttonB_.setup();
+	pin4_.setup();
     }
-    
+
+    /**
+     * @template method run
+     * description
+     *   Run method for controller, called each iteration of control loop
+     */
+    template<typename F>
+    void run(F pusher)
+    {
+	// we priortized button A, for no other reason other than we had to
+	// pick one!
+	if (buttonA_.run()) {
+	    if (led_a_state_ == HIGH) {
+		led_a_state_ = LOW;
+		// control message off
+		pusher( make_control_packet<Id>(0) );
+	    }
+	    else {
+		led_a_state_ = HIGH;
+		// control message on
+		pusher( make_control_packet<Id>(127) );
+		// turn B's led off
+		led_b_state_ = LOW;
+	    }
+	}
+	else if (buttonB_.run()) {
+	    if (led_b_state_ == HIGH) {
+		led_b_state_ = LOW;
+		// control message off
+		pusher( make_control_packet<controller_inc(Id)>(0) );
+	    }
+	    else {
+		led_b_state_ = HIGH;
+		// control message on
+		pusher( make_control_packet<controller_inc(Id)>(127) );
+		// turn A's led off
+		led_a_state_ = LOW;
+	    }
+	}
+
+	// update leds
+	pin2_.write(led_a_state_);
+	pin4_.write(led_b_state_);
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -393,25 +534,43 @@ template <
     controller_id Id,
     typename Pin1,
     typename Pin2,
-    typename Pin3>
+    typename Pin3,
+    typename Pin4>
 constexpr Pin2 controller <
     Id,
     controller_type::TOGGLE_PAIR,
     Pin1,
     Pin2,
-    Pin3>::pin2_;
+    Pin3,
+    Pin4>::pin2_;
 
 template <
     controller_id Id,
     typename Pin1,
     typename Pin2,
-    typename Pin3>
+    typename Pin3,
+    typename Pin4>
 constexpr Pin3 controller <
     Id,
     controller_type::TOGGLE_PAIR,
     Pin1,
     Pin2,
-    Pin3>::pin3_;
+    Pin3,
+    Pin4>::pin3_;
+
+template <
+    controller_id Id,
+    typename Pin1,
+    typename Pin2,
+    typename Pin3,
+    typename Pin4>
+constexpr Pin4 controller <
+    Id,
+    controller_type::TOGGLE_PAIR,
+    Pin1,
+    Pin2,
+    Pin3,
+    Pin4>::pin4_;
 
 
 } // namespace blocks

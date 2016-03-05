@@ -54,12 +54,24 @@ private:
 
     // some helper functions to expand and work on controllers
     // from the tuple container
+
+    /**
+     * @template method setup_controller
+     * @description
+     *   Helper function, which calls setup method for a given controller
+     */
     template<typename Controller>
     void setup_controller(const Controller& controller) const
     {
 	controller.setup();
     }
-    
+
+    /**
+     * @template method setup_controllers
+     * @description
+     *   Helper function, which calls setup_controller for each controller, via an 
+     *   index_sequence
+     */
     template<size_t... I>
     void setup_controllers(std::index_sequence<I...>) const
     {
@@ -67,15 +79,27 @@ private:
 	(void) ignore; // silence compiler warnings about the unused local variable
     }
 
+    /**
+     * @template method run_controller
+     * @description
+     *   Helper function, which calls run method for a given controller
+     */
     template<typename Controller>
     void run_controller(Controller& controller)
     {
-	control_packet packet = controller.run();
-	if (packet != invalid_control_packet()) {
+	// controllers run method, with function that callee calls when
+	// generating control packets
+	controller.run([&](control_packet packet) {
 	    protocol_.push_control_packet(packet);
-	}
+	});
     }
 
+    /**
+     * @template method run_controllers
+     * @description
+     *   Helper function, which calls run_controller for each controller, via an 
+     *   index_sequence
+     */
     template<size_t... I>
     void run_controllers(std::index_sequence<I...>)
     {

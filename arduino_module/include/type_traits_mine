@@ -33,6 +33,10 @@ typedef bool_constant<false> false_type;            // C++14
 template <bool, class T = void> struct enable_if;
 template <bool, class T, class F> struct conditional;
 
+// Primary classification traits
+template <class T> struct is_lvalue_reference;
+template <class T> struct is_rvalue_reference;
+
 /// Relationships between types:
 template <class T, class U> struct is_same;
 template <class Base, class Derived> struct is_base_of;
@@ -41,6 +45,14 @@ template <class From, class To> struct is_convertible;
 // See C++14 20.10.6, type relations
 //template <class T, class U> constexpr bool is_same_v
 //      = is_same<T, U>::value;                                    // C++17
+
+// is_reference
+
+template <class _Tp> struct is_lvalue_reference       : public false_type {};
+template <class _Tp> struct is_lvalue_reference<_Tp&> : public true_type {};
+
+template <class _Tp> struct is_rvalue_reference        : public false_type {};
+template <class _Tp> struct is_rvalue_reference<_Tp&&> : public true_type {};
 
 // is_same
 
@@ -54,6 +66,8 @@ struct is_same<_Tp, _Tp> : public true_type {};
 //    = is_same<_Tp, _Up>::value;
 
 template <class T> struct remove_reference;
+
+
 
 // reference modifications:
 template <class T>	

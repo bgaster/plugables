@@ -27,6 +27,8 @@
 
 #include <stdint.h>
 
+#include <static_if.hh>
+
 // type for Arduino pins
 typedef uint8_t pin_id;
 
@@ -69,16 +71,21 @@ namespace blocks {
 //       this will allow return uint8_t or uint16_t
 //       i suppose we could have two read functions?
 
-template<pin_id Id>
+template<pin_id Id, bool WithPullUp>
 struct modify_policy_digital_read
 {
     void setup() const
     {
 	// call Arduino library to set pin for input
-	pinMode(Id, INPUT); 
+	// handle pullup and non-pullup cases
+	static_if<WithPullUp>([&](auto f) {
+		pinMode(Id, INPUT_PULLUP); 
+	}).else_([&](auto f){
+		pinMode(Id, INPUT); 
+	});
     }
     
-    uint16_t read(void)
+    uint16_t read(void) const
     {
 	// perform digital read
 	return digitalRead(Id);
@@ -94,7 +101,7 @@ struct modify_policy_digital_write
 	pinMode(Id, OUTPUT); 
     }
     
-    void write(uint8_t value)
+    void write(uint8_t value) const
     {
 	// peform digital write
 	digitalWrite(Id, value);
@@ -109,22 +116,22 @@ struct modify_policy_analog_read
 	// nothing to do for analog pin on Arduino
     }
     
-    uint16_t read(void)
+    uint16_t read(void) const
     {	
 	// perform analog read
 	return analogRead(Id);
     }    
 };
 
-template<pin_id Id>
+//template<pin_id Id>
 struct modify_policy_undefined {
     // used as default for invalid, i.e. type error, cases
 };    
 
 //------------------------------------------------------------------------------
 
-template <pin_id Id, template<pin_id Id_> class pin_policy>
-struct pin : public pin_policy<Id>
+template <pin_id Id, typename pin_policy>
+struct pin : public pin_policy
 {
     constexpr pin() 
     {
@@ -134,13 +141,13 @@ struct pin : public pin_policy<Id>
 };
 
 template <pin_id Id>
-using analog_pin_ro = pin<Id, modify_policy_analog_read>;
+using analog_pin_ro = pin<Id, modify_policy_analog_read<Id>>;
+
+template <pin_id Id, bool WithPullUp>
+using digital_pin_ro = pin<Id, modify_policy_digital_read<Id, WithPullUp>>;
 
 template <pin_id Id>
-using digital_pin_ro = pin<Id, modify_policy_digital_read>;
-
-template <pin_id Id>
-using digital_pin_wo = pin<Id, modify_policy_digital_write>;
+using digital_pin_wo = pin<Id, modify_policy_digital_write<Id>>;
 
 //------------------------------------------------------------------------------
 
@@ -153,16 +160,27 @@ typedef analog_pin_ro<A3> a3_ro;
 typedef analog_pin_ro<A4> a4_ro;
 typedef analog_pin_ro<A5> a5_ro;
 typedef analog_pin_ro<A6> a6_ro;
-typedef analog_pin_ro<A7> a7_r0;
+typedef analog_pin_ro<A7> a7_ro;
 
-typedef digital_pin_ro<D0> d0_ro;
-typedef digital_pin_ro<D1> d1_ro;
-typedef digital_pin_ro<D2> d2_ro;
-typedef digital_pin_ro<D3> d3_ro;
-typedef digital_pin_ro<D4> d4_ro;
-typedef digital_pin_ro<D5> d5_ro;
-typedef digital_pin_ro<D6> d6_ro;
-typedef digital_pin_ro<D7> d7_ro;
+typedef digital_pin_ro<D0, false> d0_ro;
+typedef digital_pin_ro<D1, false> d1_ro;
+typedef digital_pin_ro<D2, false> d2_ro;
+typedef digital_pin_ro<D3, false> d3_ro;
+typedef digital_pin_ro<D4, false> d4_ro;
+typedef digital_pin_ro<D5, false> d5_ro;
+typedef digital_pin_ro<D6, false> d6_ro;
+typedef digital_pin_ro<D7, false> d7_ro;
+typedef digital_pin_ro<D8, false> d8_ro;
+
+typedef digital_pin_ro<D0, true> d0_ropu;
+typedef digital_pin_ro<D1, true> d1_ropu;
+typedef digital_pin_ro<D2, true> d2_ropu;
+typedef digital_pin_ro<D3, true> d3_ropu;
+typedef digital_pin_ro<D4, true> d4_ropu;
+typedef digital_pin_ro<D5, true> d5_ropu;
+typedef digital_pin_ro<D6, true> d6_ropu;
+typedef digital_pin_ro<D7, true> d7_ropu;
+typedef digital_pin_ro<D8, true> d8_ropu;
 
 typedef digital_pin_wo<D0> d0_wo;
 typedef digital_pin_wo<D1> d1_wo;
@@ -171,7 +189,9 @@ typedef digital_pin_wo<D3> d3_wo;
 typedef digital_pin_wo<D4> d4_wo;
 typedef digital_pin_wo<D5> d5_wo;
 typedef digital_pin_wo<D6> d6_wo;
-typedef digital_pin_wo<D7> d7_w0;
+typedef digital_pin_wo<D7> d7_wo;
+typedef digital_pin_wo<D8> d8_wo;
+
 
 }; // namespace blocks
 
